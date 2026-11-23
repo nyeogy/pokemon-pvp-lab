@@ -641,7 +641,7 @@ function drawScanPreview(bars){
    ctx.strokeRect(.117*canvas.width,y-5,.354*canvas.width,10);
    const x=.48*canvas.width;
    ctx.fillStyle='#101827';ctx.fillRect(x,y-12,28,22);
-   ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText(r.iv,x+5,y+4);
+   ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText(r.iv===null?'?':r.iv,x+5,y+4);
  });
 }
 function getOcrCrop(img,box,mode='name'){
@@ -779,7 +779,12 @@ async function processPhoto(){
      cpRaw=cpScans.join(' / ');
      const exact=cpScans.map(t=>parsePhotoCP(t)).filter(v=>v!==null);
      const plausible=cpScans.map(t=>parsePhotoCP(t,true)).filter(v=>v!==null);
-     cp=exact[0]??(new Set(plausible).size===1?plausible[0]:null);
+     const counts=new Map();
+     for(const value of plausible)counts.set(value,(counts.get(value)||0)+1);
+     // Without an explicit CP label, require the same number in two
+     // independent top-screen crops to prevent accidental stat/level picks.
+     const repeated=[...counts.entries()].filter(([,count])=>count>=2).map(([value])=>value);
+     cp=exact.length&&new Set(exact).size===1?exact[0]:(repeated.length===1?repeated[0]:null);
    }finally{await worker.terminate();}
    nameMatch=findPhotoSpecies(nameRaw);
    if(nameMatch.candidate&&nameMatch.certain){
