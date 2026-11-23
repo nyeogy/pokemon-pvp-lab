@@ -169,7 +169,7 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 <footer class="footer">비공식 팬 제작 분석 도구 · 사진은 로컬 브라우저에서만 처리됩니다(OCR 모듈/언어 데이터는 외부 CDN에서 다운로드) · Pokémon 및 관련 명칭은 해당 권리자에게 귀속됩니다. PvPoke 공개 데이터를 표시하며 순위는 공식 Pokémon GO 발표 자료가 아닙니다. · 로그인 시 보관함과 팀 선택 정보는 Supabase 클라우드에 저장됩니다. 비로그인 시에는 이 기기에만 보관됩니다.</footer>
 </div>
 <script src="./cloud-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onload="window.__pvpCloudLoaded?.()"></script>
 <script>
 'use strict';
 const ROOT='https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data/';
@@ -1213,7 +1213,7 @@ function cloudInit(){
  $('#cloudImportGuest').onclick=cloudImportLocal;
  cloudRenderUI();
  if(!cloudConfigured())return;
- if(!window.supabase?.createClient){cloudHeader('인증 모듈 불러오기 실패',true);cloudMessage('Supabase 인증 라이브러리를 불러오지 못했습니다. 새로고침하거나 네트워크 연결을 확인하세요.',true);return;}
+ if(!window.supabase?.createClient){cloudHeader('로그인 기능 준비 중');cloudMessage('로그인 모듈을 준비 중입니다. 포켓몬 랭킹 데이터는 별도로 불러옵니다.');return;}
  try{
   cloudClient=window.supabase.createClient(CLOUD_CONFIG.url,CLOUD_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   cloudClient.auth.onAuthStateChange((event,session)=>{setTimeout(()=>cloudHandleSession(session),0);});
@@ -1225,6 +1225,7 @@ function cloudInit(){
  cloudRenderUI();
 }
 
+window.__pvpCloudLoaded=()=>{if(!cloudClient)cloudInit();};
 function init(){initPhoto();loadOwned();initTeamBuilder();cloudInit();boardInit();
  $('#backRank').onclick=()=>showTab('rankings');
  $$('#ivdexLeagues button').forEach(b=>b.onclick=()=>{ivdexLeague=b.dataset.league;ivdexPage=0;$('#ivdexRank').value='';refreshIVDex();});
