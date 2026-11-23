@@ -89,6 +89,19 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 .auth-feedback.error{background:#43282d;color:#ffd5d5}
 #cloudPanel strong{color:var(--mint)}
 @media(max-width:650px){.auth-fields{grid-template-columns:1fr}.top-actions{flex-wrap:wrap;justify-content:flex-end}.account-status{max-width:140px}}
+
+.training-recommendation{display:grid;gap:8px;padding:20px 22px;margin:17px 0 20px;border:1px solid var(--line);border-radius:15px;background:#182839}
+.training-recommendation.is-train{border-color:#65d7b2;background:linear-gradient(120deg,#123c39,#182839)}
+.training-recommendation.is-keep{border-color:#cba766;background:linear-gradient(120deg,#38301f,#182839)}
+.training-recommendation.is-no{border-color:#8c5260;background:linear-gradient(120deg,#35222e,#182839)}
+.training-recommendation>b{font-size:19px}.training-recommendation-label{font-size:18px;font-weight:900;color:var(--mint)}
+.training-recommendation.is-keep .training-recommendation-label{color:var(--amber)}
+.training-recommendation.is-no .training-recommendation-label{color:var(--bad)}
+.training-recommendation-reason{font-size:13px;line-height:1.65}
+.training-row-status{font-size:12px;font-weight:800;margin-top:8px}
+.training-row-status.train-good{color:var(--mint)}.training-row-status.train-keep{color:var(--amber)}
+.training-row-status.train-reject{color:var(--bad)}.training-row-status.train-wait{color:var(--blue)}
+.training-row-reason{font-size:12px;color:var(--muted);line-height:1.55;margin-top:5px;max-width:480px}
 </style>
 </head>
 <body><div class="shell">
@@ -335,10 +348,114 @@ function getIV(){const raw=['ivA','ivD','ivH'].map(id=>$('#'+id).value.trim());i
 function getInputSpecies(){if(selectedSpecies&&$('#speciesInput').value===nameOf(selectedSpecies))return selectedSpecies;const q=$('#speciesInput').value.trim().toLowerCase();const p=pokemon.find(p=>nameOf(p).toLowerCase()===q||p.speciesName.toLowerCase()===q||p.speciesId===q);if(!p)throw Error('포켓몬을 검색 결과에서 선택해 주세요.');selectPokemon(p.speciesId);return p;}
 function assess(species,a,d,h,levelLimit){const lineage=familyOf(species);let all=[];for(const p of lineage){for(const key of Object.keys(LEAGUES)){const m=rankIndexes[key].get(p.speciesId);const iv=calcIVRank(p,a,d,h,key,levelLimit);if(!iv)continue;const rank=m?.rank??null,total=ranks[key].length;let combined=rank? (1-(rank-1)/total)*100+Math.max(-8,(iv.ratio-95)*.45):0;all.push({species:p,league:key,m,iv,rank,total,combined});}}const ranked=all.filter(x=>x.rank).sort((a,b)=>b.combined-a.combined);return {all:all.sort((a,b)=>(b.combined-a.combined)),best:ranked[0]||null};}
 async function analyze(silent=false){if(!dataReady){if(!silent)alert('랭킹 데이터를 먼저 불러와야 합니다.');return;}try{const p=getInputSpecies(),[a,d,h]=getIV(),levelLimit=$('#buddyCap').checked?51:50;$('#analyzeBtn').disabled=true;$('#analyzeBtn').textContent='4,096개 개체값 계산 중…';await new Promise(res=>setTimeout(res,10));const result=assess(p,a,d,h,levelLimit);lastAnalysis={p,a,d,h,levelLimit,result};renderAnalysis();$('#saveOwnedBtn').disabled=false;}catch(e){if(!silent)alert(e.message);console.error(e);}finally{$('#analyzeBtn').disabled=false;$('#analyzeBtn').textContent='개체값 순위 계산';}}
-function renderAnalysis(){const {p,a,d,h,levelLimit,result}=lastAnalysis;const max=15+15+15;let summary='';if(result.best){const b=result.best;summary=`<div class="analysis-top"><div class="section-label">추천 활용처 · 현재 메타와 개체값 효율을 함께 고려</div><b>${escapeHTML(nameOf(b.species))} · ${LEAGUES[b.league].label}</b><div class="sub">성능 순위 전체 ${fmt(b.total)}마리 중 ${fmt(b.rank)}위 · 이 개체 IV 순위 ${fmt(b.iv.total)}개 중 ${fmt(b.iv.rank)}위</div></div>`;}else{summary='<div class="alert">현재 PvPoke 전체 랭킹에 등록된 진화형이 없어 성능 추천을 할 수 없습니다. 아래의 개체값 효율만 확인하세요.</div>';}
-const rows=result.all.map(x=>{const best=x===result.best;const rank=x.rank?`<strong>${fmt(x.total)}마리 중 ${fmt(x.rank)}위</strong><div class="soft">PvPoke ${x.m.score??'—'}점</div>`:'<span class="soft">성능 순위 미등재</span>';return `<div class="analysis-item ${best?'best':''}"><div><strong>${escapeHTML(nameOf(x.species))}</strong><div class="soft">${LEAGUES[x.league].label}${best?' · <span style="color:var(--mint)">추천</span>':''}</div></div><div>${rank}</div><div><b>${fmt(x.iv.total)}개 중 ${fmt(x.iv.rank)}위</b><div class="soft">능력치 효율 ${x.iv.ratio.toFixed(2)}%</div></div><div class="num">CP ${fmt(x.iv.cp)}<div class="soft">Lv. ${x.iv.level}</div></div></div>`;}).join('');
-const topMoves=result.best?`<div class="panel small-panel"><div class="section-label">추천 기술 · ${escapeHTML(nameOf(result.best.species))} / ${LEAGUES[result.best.league].label}</div><div style="font-weight:800">${movesOf(result.best.m,result.best.species)||'추천 기술 데이터 없음'}</div><div class="hint">기술 순서: 노말 기술 / 스페셜 기술 1 / 스페셜 기술 2 · *는 특별 기술</div></div>`:'';
-$('#resultBlock').innerHTML=`<div class="panel"><div class="section-head"><div><h3>${escapeHTML(nameOf(p))} · ${a}/${d}/${h}</h3><div class="sub">총 개체값 ${(a+d+h)*100/45|0}% · Lv.${levelLimit} 상한 · 진화형 포함 ${result.all.length}개 조합</div></div><span class="chip muted">IV 랭킹: 4,096개 전체 비교</span></div>${summary}<div class="section-label">진화형 및 리그별 상세 비교</div><div class="analysis-list">${rows}</div>${topMoves}<p class="hint">개체값 순위는 같은 포켓몬·폼의 IV 조합 비교이며, 리그 성능 순위는 PvPoke 평가 포켓몬 중 순위입니다. 추천은 종합 순위와 스탯 효율을 이용한 참고용 판단이며 팀 조합·실제 승률을 보장하지 않습니다.</p></div>`;}
+
+/* 육성 판정: 리그 종 순위와 IV 순위 모두 상위 50%가 필수.
+   CP로 현재 레벨을 역산하고, 진화형 동일 레벨 CP 및 목표 레벨까지의 차이를 추정.
+   비용은 실제 별의모래 계산이 아닌 상대적 강화 부담 지표. */
+function trainingDecision(entry,original,a,d,h,currentCp,desiredLeague){
+ const isSelected=!LEAGUES[desiredLeague]||entry.league===desiredLeague;
+ if(!isSelected)return {kind:'other',label:'목표 리그 외',reason:'선택한 목표 리그가 아닙니다.'};
+ const failures=[];
+ const speciesCutoff=Math.floor(entry.total/2);
+ const ivCutoff=Math.floor(entry.iv.total/2);
+ if(!entry.rank||entry.rank>speciesCutoff)
+  failures.push('종합 성능 순위 상위 50% 밖'+(entry.rank?' ('+fmt(entry.rank)+'/'+fmt(entry.total)+')':' (미등재)'));
+ if(entry.iv.rank>ivCutoff)
+  failures.push('IV 순위 상위 50% 밖 ('+fmt(entry.iv.rank)+'/'+fmt(entry.iv.total)+')');
+ if(failures.length)return {kind:'reject',label:'육성·보관 비추천',reason:failures.join(' · ')};
+ if(!Number.isInteger(currentCp)||currentCp<10||currentCp>10000)
+  return {kind:'pending',label:'CP 확인 필요',reason:'현재 CP를 입력해야 강화 비용을 판단할 수 있습니다.'};
+ if(currentCp>LEAGUES[entry.league].cap)
+  return {kind:'reject',label:'육성·보관 비추천',reason:'현재 CP가 이 리그 상한을 초과했습니다.'};
+ if(!original?.baseStats||!entry.species?.baseStats)
+  return {kind:'pending',label:'레벨 확인 필요',reason:'기본 능력치가 없어 현재 레벨을 추정할 수 없습니다.'};
+ const possible=[];
+ for(let i=0;i<CPM.length;i++){
+  if(calcCP(original,a,d,h,i)===currentCp)possible.push(i);
+ }
+ if(!possible.length)
+  return {kind:'pending',label:'CP 확인 필요',reason:'IV와 현재 CP에 해당하는 레벨을 찾지 못했습니다. 입력값을 확인해 주세요.'};
+ const targetIndex=Math.min(CPM.length-1,Math.round((entry.iv.level-1)*2));
+ const viable=possible.filter(i=>i<=targetIndex&&
+   (entry.league==='master'||calcCP(entry.species,a,d,h,i)<=LEAGUES[entry.league].cap));
+ if(!viable.length)
+  return {kind:'reject',label:'육성·보관 비추천',reason:'현재 레벨에서 진화하면 리그 CP 제한을 넘거나 목표 레벨까지 조정할 수 없습니다.'};
+ // 현재 CP만으로 레벨이 중복될 때는 가장 낮은 강화 부담을 추정하고 그 사실을 표기.
+ const idx=Math.max(...viable);
+ const currentLevel=1+idx/2, targetLevel=entry.iv.level;
+ const levels=targetLevel-currentLevel;
+ const nowEvolvedCp=calcCP(entry.species,a,d,h,idx);
+ const fraction=nowEvolvedCp/Math.max(1,entry.iv.cp);
+ const note='현재 Lv.'+currentLevel+' 추정 → 목표 Lv.'+targetLevel+
+   ' (강화 약 '+(levels*2).toFixed(0)+'회) · 현재 레벨 진화 시 CP '+fmt(nowEvolvedCp)+
+   ' / 목표 CP '+fmt(entry.iv.cp)+(possible.length>1?' · 레벨 추정에 복수 후보 있음':'');
+ if(levels>15||fraction<0.60)
+  return {kind:'reject',label:'육성·보관 비추천',reason:'목표 CP까지 강화 부담이 지나치게 큽니다. '+note};
+ if(levels>8||fraction<0.78)
+  return {kind:'keep',label:'보관 추천',reason:'성능·IV 기준을 통과했지만 즉시 강화에는 자원 부담이 있습니다. '+note};
+ return {kind:'train',label:'강화 추천',reason:'성능·IV 순위 상위 50%이며 목표 CP까지 강화 부담도 비교적 낮습니다. '+note};
+}
+function renderAnalysis(){
+ if(!lastAnalysis)return;
+ const {p,a,d,h,levelLimit,result}=lastAnalysis;
+ const cpRaw=$('#ownedCP').value.trim();
+ const currentCp=cpRaw!==''?Number(cpRaw):null;
+ const league=$('#ownedLeague').value;
+ const evaluations=result.all.map(x=>({...x,decision:trainingDecision(x,p,a,d,h,currentCp,league)}));
+ const available=evaluations.filter(x=>x.decision.kind!=='other');
+ const order={train:0,keep:1,pending:2,reject:3};
+ available.sort((x,y)=>order[x.decision.kind]-order[y.decision.kind]||y.combined-x.combined);
+ const lead=available[0]||null;
+ const train=available.find(x=>x.decision.kind==='train');
+ const kept=available.find(x=>x.decision.kind==='keep');
+ const bestEligible=train||kept;
+ const headline=bestEligible||lead;
+ const recommendation=headline?
+   '<div class="training-recommendation '+(bestEligible?'is-'+bestEligible.decision.kind:'is-no')+'">'+
+    '<div class="training-recommendation-label">'+escapeHTML(headline.decision.label)+'</div>'+
+    '<b>'+escapeHTML(nameOf(headline.species))+' · '+LEAGUES[headline.league].label+'</b>'+
+    '<div class="training-recommendation-reason">'+escapeHTML(headline.decision.reason)+'</div>'+
+    '<div class="hint">해당 리그 성능 순위 '+(headline.rank?fmt(headline.total)+'마리 중 '+fmt(headline.rank)+'위':'미등재')+
+    ' · IV 순위 '+fmt(headline.iv.total)+'개 중 '+fmt(headline.iv.rank)+'위</div>'+
+   '</div>'
+   :'<div class="alert">비교할 리그를 선택해 주세요.</div>';
+ const rows=evaluations.map(x=>{
+  const d=x.decision;
+  const best=x===bestEligible;
+  const rank=x.rank?'<strong>'+fmt(x.total)+'마리 중 '+fmt(x.rank)+'위</strong>'+
+    '<div class="soft">PvPoke '+escapeHTML(String(x.m?.score??'—'))+'점</div>'
+    :'<span class="soft">성능 순위 미등재</span>';
+  const statusColor=d.kind==='train'?'train-good':d.kind==='keep'?'train-keep':
+    d.kind==='pending'?'train-wait':'train-reject';
+  return '<div class="analysis-item '+(best?'best':'')+'">'+
+    '<div><strong>'+escapeHTML(nameOf(x.species))+'</strong>'+
+      '<div class="soft">'+LEAGUES[x.league].label+'</div>'+
+      '<div class="training-row-status '+statusColor+'">'+escapeHTML(d.label)+'</div>'+
+      '<div class="training-row-reason">'+escapeHTML(d.reason)+'</div></div>'+
+    '<div>'+rank+'</div>'+
+    '<div><b>'+fmt(x.iv.total)+'개 중 '+fmt(x.iv.rank)+'위</b>'+
+      '<div class="soft">능력치 효율 '+x.iv.ratio.toFixed(2)+'%</div></div>'+
+    '<div class="num">CP '+fmt(x.iv.cp)+'<div class="soft">Lv. '+x.iv.level+'</div></div>'+
+   '</div>';
+ }).join('');
+ const topMoves=bestEligible&&bestEligible.m?
+ '<div class="panel small-panel"><div class="section-label">추천 기술 · '+
+ escapeHTML(nameOf(bestEligible.species))+' / '+LEAGUES[bestEligible.league].label+'</div>'+
+ '<div style="font-weight:800">'+(movesOf(bestEligible.m,bestEligible.species)||'추천 기술 데이터 없음')+'</div>'+
+ '<div class="hint">기술 순서: 노말 기술 / 스페셜 기술 1 / 스페셜 기술 2 · *는 특별 기술</div></div>':'';
+ $('#resultBlock').innerHTML=
+ '<div class="panel"><div class="section-head"><div><h3>'+escapeHTML(nameOf(p))+
+ ' · '+a+'/'+d+'/'+h+'</h3><div class="sub">총 개체값 '+Math.floor((a+d+h)*100/45)+
+ '% · Lv.'+levelLimit+' 상한 · 진화형 포함 '+result.all.length+
+ '개 조합</div></div><span class="chip muted">IV 4,096개 순위 비교</span></div>'+
+ recommendation+'<div class="section-label">진화형 및 리그별 상세 비교</div>'+
+ '<div class="analysis-list">'+rows+'</div>'+topMoves+
+ '<p class="hint">판정 조건: (1) 해당 리그 PvPoke 종합 성능 상위 50% (2) 동일 포켓몬·폼 IV 조합 상위 50%를 모두 충족해야 합니다.'+
+ ' CP와 IV로 현재 레벨을 추정하여 목표까지 추가 강화 8레벨 이하·예상 진화 CP 78% 이상이면 강화 추천,'+
+ ' 15레벨 이하·60% 이상이면 보관 추천, 그 미만이면 비추천합니다.'+
+ ' CP가 낮아도 진화 자체가 불가능한 것은 아닙니다. 이 기준은 육성 부담을 간접 추정한 것으로 사탕·별의모래 실비, 실제 승률을 계산하지 않습니다.'+
+ ' 마스터리그도 레벨 50(베스트파트너 선택 시 51)을 가정합니다.</p></div>';
+}
 function saveCurrent(){
  if(!lastAnalysis)return;
  const {p,a,d,h}=lastAnalysis;
@@ -1236,6 +1353,6 @@ function init(){const initialDataLoad=fetchData();$$('.tab').forEach(t=>t.onclic
  $('#ivdexNext').onclick=()=>{ivdexPage++;refreshIVDex();};
  ['ivdexAtk','ivdexDef','ivdexHp','ivdexRank'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ivdexPage=0;refreshIVDex();}}));
  $('#ivdexRows').addEventListener('click',e=>{const target=e.target.closest('[data-ivpick]');if(!target)return;const [a,d,h]=target.dataset.ivpick.split(',').map(Number);analyzePickedIV(a,d,h);});
-$$('#leagueButtons button').forEach(b=>b.onclick=()=>{activeLeague=b.dataset.league;visibleRows=60;$$$('#leagueButtons button').forEach(v=>v.classList.toggle('active',v===b));renderRankings();});$('#rankSearch').oninput=()=>{visibleRows=60;renderRankings();};$('#moreBtn').onclick=()=>{visibleRows+=60;renderRankings();};$('#rankList').addEventListener('click',e=>{const t=e.target.closest('[data-id]');if(!t)return;openIVDex(t.dataset.id,activeLeague);});$('#speciesInput').addEventListener('input',()=>{selectedSpecies=null;editingOwnedId=null;markAnalysisDirty();suggestions();});['ivA','ivD','ivH'].forEach(id=>$('#'+id).addEventListener('input',markAnalysisDirty));$('#speciesInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#speciesSuggestions').classList.contains('show')){const first=$('#speciesSuggestions [data-choose]');if(first){e.preventDefault();selectPokemon(first.dataset.choose);}}});$('#speciesSuggestions').addEventListener('click',e=>{const t=e.target.closest('[data-choose]');if(t)selectPokemon(t.dataset.choose);});document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete'))$('#speciesSuggestions').classList.remove('show');});$('#analyzeForm').onsubmit=e=>{e.preventDefault();analyze();};$('#saveOwnedBtn').onclick=saveCurrent;$('#goAdd').onclick=()=>showTab('analyzer');$('#ownedList').addEventListener('click',e=>{const t=e.target.closest('[data-own-action]');if(!t)return;if(t.dataset.ownAction==='remove')removeOwned(t.dataset.owned);else goAnalyzeOwned(t.dataset.owned);});$('#refreshBtn').onclick=()=>fetchData(true);$('#exportBtn').onclick=exportOwned;$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async e=>{if(e.target.files?.[0])await importOwned(e.target.files[0]);e.target.value='';};$('#buddyCap').onchange=()=>{if(lastAnalysis)analyze(true);};}
+$$('#leagueButtons button').forEach(b=>b.onclick=()=>{activeLeague=b.dataset.league;visibleRows=60;$$$('#leagueButtons button').forEach(v=>v.classList.toggle('active',v===b));renderRankings();});$('#rankSearch').oninput=()=>{visibleRows=60;renderRankings();};$('#moreBtn').onclick=()=>{visibleRows+=60;renderRankings();};$('#rankList').addEventListener('click',e=>{const t=e.target.closest('[data-id]');if(!t)return;openIVDex(t.dataset.id,activeLeague);});$('#speciesInput').addEventListener('input',()=>{selectedSpecies=null;editingOwnedId=null;markAnalysisDirty();suggestions();});['ivA','ivD','ivH'].forEach(id=>$('#'+id).addEventListener('input',markAnalysisDirty));$('#speciesInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#speciesSuggestions').classList.contains('show')){const first=$('#speciesSuggestions [data-choose]');if(first){e.preventDefault();selectPokemon(first.dataset.choose);}}});$('#speciesSuggestions').addEventListener('click',e=>{const t=e.target.closest('[data-choose]');if(t)selectPokemon(t.dataset.choose);});document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete'))$('#speciesSuggestions').classList.remove('show');});$('#analyzeForm').onsubmit=e=>{e.preventDefault();analyze();};$('#saveOwnedBtn').onclick=saveCurrent;$('#goAdd').onclick=()=>showTab('analyzer');$('#ownedList').addEventListener('click',e=>{const t=e.target.closest('[data-own-action]');if(!t)return;if(t.dataset.ownAction==='remove')removeOwned(t.dataset.owned);else goAnalyzeOwned(t.dataset.owned);});$('#refreshBtn').onclick=()=>fetchData(true);$('#exportBtn').onclick=exportOwned;$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async e=>{if(e.target.files?.[0])await importOwned(e.target.files[0]);e.target.value='';};['ownedCP','ownedLeague'].forEach(id=>$('#'+id).addEventListener(id==='ownedCP'?'input':'change',()=>{if(lastAnalysis)renderAnalysis();}));$('#buddyCap').onchange=()=>{if(lastAnalysis)analyze(true);};}
 try{init();}catch(e){console.error('시작 오류:',e);const el=document.getElementById('loadMessage');if(el){el.style.display='block';el.innerHTML='<div class="alert">초기화 중 오류가 발생했습니다: '+String(e?.message||e).replaceAll('<','&lt;')+'</div><button class="btn" onclick="location.reload()">새로고침</button>'; }}
 </script></body></html>
