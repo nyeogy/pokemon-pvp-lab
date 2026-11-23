@@ -94,7 +94,7 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 <body><div class="shell">
 <header class="top"><div class="brand"><div class="logo">◉</div><div><div class="eyebrow">POKÉMON GO · PERSONAL PVP DEX</div><h1>배틀도감 <span style="color:var(--mint)">LAB</span></h1></div></div><div class="top-actions"><span id="dataStatus" class="status">데이터 연결 준비 중</span><span id="cloudHeaderStatus" class="account-status">로컬 보관함</span><button class="btn tiny ghost" id="accountTopBtn" type="button">로그인</button><button class="btn ghost" id="refreshBtn" type="button">↻ 데이터 새로고침</button></div></header>
 <section class="hero"><div><div class="eyebrow">YOUR PVP RESEARCH DESK</div><h2>순위부터 개체값까지, 한 번에.</h2><p>리그별 랭킹 · IV 4,096개 순위표 · 사진 자동 판독 · 최적 팀 TOP 5 · 타입 약점 분석 · 육성 우선순위 · 개인 보관함</p></div><div class="metric-row"><div class="metric"><b id="greatCount">—</b><small>슈퍼리그 평가 포켓몬</small></div><div class="metric"><b id="ultraCount">—</b><small>하이퍼리그 평가 포켓몬</small></div><div class="metric"><b id="ownedCount">0</b><small>내가 등록한 포켓몬</small></div></div></section>
-<nav class="tabs"><button class="tab active" data-tab="rankings">🏆 전체 랭킹</button><button class="tab" data-tab="ivdex">📊 개체값 순위표</button><button class="tab" data-tab="analyzer">🧬 개체값 분석</button><button class="tab" data-tab="collection">📦 내 포켓몬</button><button class="tab" data-tab="teams">⚔️ 최적 팀 TOP 5</button><button class="tab" data-tab="account">👤 계정·동기화</button><button class="tab" data-tab="guide">⚙️ 데이터·안내</button></nav>
+<nav class="tabs"><button class="tab active" data-tab="rankings">🏆 전체 랭킹</button><button class="tab" data-tab="ivdex">📊 개체값 순위표</button><button class="tab" data-tab="analyzer">🧬 개체값 분석</button><button class="tab" data-tab="collection">📦 내 포켓몬</button><button class="tab" data-tab="teams">⚔️ 최적 팀 TOP 5</button><button class="tab" data-tab="leaderboard">🏅 조합 랭킹</button><button class="tab" data-tab="account">👤 계정·동기화</button><button class="tab" data-tab="guide">⚙️ 데이터·안내</button></nav>
 <div id="loadMessage" class="loader"><div class="spinner"></div>PvPoke 랭킹과 포켓몬 데이터를 불러오는 중입니다.<div class="hint">최초 실행 시 인터넷 연결이 필요합니다.</div></div>
 <section class="view active" id="view-rankings"><div class="section-head"><div><h3>리그별 전체 랭킹</h3><div class="sub" id="rankingSubtitle">공개된 PvPoke 종합 랭킹 · 포켓몬을 누르면 개체값 순위표를 볼 수 있습니다.</div></div><div class="league-switch" id="leagueButtons"><button data-league="great" class="active">슈퍼 · 1,500</button><button data-league="ultra">하이퍼 · 2,500</button><button data-league="master">마스터 · 무제한</button></div></div><div class="row spread mb18"><input class="search" id="rankSearch" placeholder="이름 검색 · 한글/영문/도감번호"><span class="sub" id="rankFilterInfo">—</span></div><div id="rankList" class="rank-list"></div><div style="text-align:center;margin:19px 0"><button class="btn" id="moreBtn" style="display:none">더 보기 +60</button></div></section>
 <section class="view" id="view-ivdex">
@@ -143,7 +143,15 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 <div class="panel training-panel"><div class="section-head"><div><h3>🌱 내 포켓몬 육성 우선순위</h3><div class="sub">최대 강화 시점을 가정해, 각 개체가 최고의 팀 구성에 얼마나 기여하는지 비교합니다.</div></div><span class="chip muted">포켓몬 고정 여부와 독립적으로 평가</span></div><div id="teamTrainingList"><div class="empty">3마리 이상 등록하면 육성 우선순위를 계산합니다.</div></div></div>
 <p class="hint">추천 역할(선봉·교체·마무리)은 타입 상성과 순위로 추정하며 실전 교체·에너지·실드 시뮬레이션이 아닙니다. 특별 기술의 습득 조건, 사탕·별의모래 비용, 그림자 개체의 실제 기술 보유 여부는 별도로 확인해 주세요. 현재 CP와 목표 리그가 지정된 포켓몬만 해당 리그 팀 후보에 포함됩니다. 진화 후 CP 제한도 확인합니다.</p>
 </section>
-<section class="view" id="view-account">
+<section class="view" id="view-leaderboard">
+ <div class="section-head"><div><h3>🏅 사용자별 최고 조합 랭킹</h3><div class="sub">친구들과 최고의 3마리 조합을 공유하세요. 리그마다 사용자당 최고 조합 하나만 게시할 수 있습니다.</div></div></div>
+ <div class="info"><b>비교 기준:</b> 배틀도감 LAB 자체 평가 점수(리그 성능 50% · 방어 상성 30% · 기술 공격 범위 15% · IV 5%). PvP 실전 승률이나 공식 랭킹이 아닙니다. <b>로그인 사용자만 조회</b>할 수 있으며, 본인이 게시한 팀의 아이디·3마리·IV·점수만 공개됩니다. 보관함 전체는 공개되지 않습니다.</div>
+ <div class="league-switch" id="boardLeagueSwitch" style="margin:16px 0"><button data-league="great" class="active">슈퍼리그</button><button data-league="ultra">하이퍼리그</button><button data-league="master">마스터리그</button></div>
+ <div class="panel" style="margin-bottom:16px"><div class="row spread"><div><b>내 최고 팀 공개하기</b><p class="sub" id="boardMineHint" style="margin:5px 0 0">로그인 후 내 최고 팀을 게시할 수 있습니다.</p></div><div class="row"><button class="btn primary" type="button" id="boardPublish">내 최고 조합 게시·갱신</button><button class="btn ghost" type="button" id="boardRemove">게시 취소</button></div></div><div id="boardFeedback" class="hint" aria-live="polite" style="margin-top:8px"></div></div>
+ <div class="row spread mb18"><b id="boardTitle">슈퍼리그 사용자 랭킹</b><button class="btn tiny ghost" type="button" id="boardRefresh">↻ 새로고침</button></div>
+ <div id="boardRows"><div class="empty">랭킹을 불러오려면 로그인하세요.</div></div>
+ <p class="hint">순위는 게시된 점수 기준 내림차순입니다. 자체 계산 점수는 클라이언트에서 생성되므로 위·변조를 완전히 방지하는 공식 대회 기록은 아닙니다. 갱신 시 현재 보관함의 최고 조합으로 덮어씁니다.</p>
+ </section> <section class="view" id="view-account">
  <div class="section-head"><div><h3>계정 로그인 · 클라우드 동기화</h3><div class="sub">각자의 포켓몬은 계정별로 분리됩니다. 로그인하지 않아도 기존 로컬 보관함을 사용할 수 있습니다.</div></div></div>
  <div class="panel auth-panel" id="cloudPanel">
   <div id="cloudAuthState">로그인 상태를 확인하는 중입니다.</div>
@@ -246,7 +254,7 @@ async function openDB(){return new Promise((resolve,reject)=>{const req=indexedD
 async function dbGet(db,k){return new Promise((resolve,reject)=>{const r=db.transaction('cache').objectStore('cache').get(k);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function dbPut(db,k,data){return new Promise((resolve,reject)=>{const r=db.transaction('cache','readwrite').objectStore('cache').put(data,k);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error);});}
 async function fetchData(force=false){if(dataReady&&!force)return;$('#loadMessage').style.display='block';$('#loadMessage').innerHTML='<div class="spinner"></div>포켓몬 · 리그 랭킹 데이터를 불러오는 중입니다…';$('#refreshBtn').disabled=true;let db=null;try{db=await openDB();}catch(e){console.warn('IndexedDB is unavailable',e);}try{let fresh=true;let entries=await Promise.all(Object.entries(URLS).map(async([key,url])=>{try{const r=await fetch(url,{cache:force?'no-store':'default'});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!Array.isArray(data)&&!(key.startsWith('move')&&data&&typeof data==='object'&&!Array.isArray(data)))throw Error('잘못된 데이터 구조: '+key);db&&dbPut(db,key,{data,saved:new Date().toISOString()}).catch(()=>{});return[key,data];}catch(e){if(db){const fromDB=await dbGet(db,key);if(fromDB?.data){fresh=false;return [key,fromDB.data];}}if(key==='moves')return [key,[]];if(key==='moveEn'||key==='moveKo')return [key,{}];throw Error(key+': '+e.message);}}));const loaded=Object.fromEntries(entries);ivCache.clear();pokemon=loaded.pokemon;ko=loaded.names;initializeMoveNames(loaded.moveEn,loaded.moveKo);teamMovesById=new Map(loaded.moves.map(x=>[x.moveId,x]));pokemonById=new Map(pokemon.map(p=>[p.speciesId,p]));for(const key of ['great','ultra','master']){ranks[key]=loaded[key].map((r,i)=>({...r,rank:i+1}));rankIndexes[key]=new Map(ranks[key].map(r=>[r.speciesId,r]));}dataReady=true;$('#greatCount').textContent=fmt(ranks.great.length);$('#ultraCount').textContent=fmt(ranks.ultra.length);$('#loadMessage').style.display='none';const now=new Date();$('#dataStatus').textContent=(fresh?'자료 갱신':'오프라인 캐시')+' · '+now.toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});renderRankings();renderOwned();invalidateTeamCache();if(lastAnalysis)analyze(true);}catch(e){console.error(e);$('#loadMessage').innerHTML='<div class="alert">랭킹 데이터를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침하세요.<br><small>'+escapeHTML(e.message)+'</small></div><button class="btn" id="retryLoad">다시 시도</button>';$('#retryLoad').onclick=()=>fetchData(true);$('#dataStatus').textContent='네트워크 연결 필요';}finally{$('#refreshBtn').disabled=false;}}
-function showTab(key){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+key));if(key==='collection')renderOwned();if(key==='teams')renderTeamBuilder();if(key==='account')cloudRenderUI();window.scrollTo({top:0,behavior:'smooth'});}
+function showTab(key){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+key));if(key==='collection')renderOwned();if(key==='teams')renderTeamBuilder();if(key==='account')cloudRenderUI();if(key==='leaderboard')boardRefresh();window.scrollTo({top:0,behavior:'smooth'});}
 function renderRankings(){if(!dataReady)return;const q=$('#rankSearch').value.trim().toLowerCase();const list=ranks[activeLeague].filter(r=>{const p=pokemonById.get(r.speciesId);return !q||(`${r.speciesName} ${r.speciesId} ${p?.dex||''} ${p?nameOf(p):''}`).toLowerCase().includes(q)});const total=ranks[activeLeague].length;$('#rankingSubtitle').textContent=`${LEAGUES[activeLeague].label} · 전체 ${fmt(total)}마리의 종합 성능 순위 (PvPoke)`;$('#rankFilterInfo').textContent=`${fmt(list.length)}마리 표시 · 기술의 *는 특별 기술`;let html=list.slice(0,visibleRows).map(r=>{const p=pokemonById.get(r.speciesId);return `<div class="rank-item" data-id="${escapeHTML(r.speciesId)}"><div class="pos">#${fmt(r.rank)}</div>${portraitImg(p)}<div><div class="pk-name">${escapeHTML(p?nameOf(p):r.speciesName)}</div><div class="pk-en">${escapeHTML(r.speciesName)} · ${p?.types?.map(t=>TYPES[t]||t).join(' / ')||''}</div></div><div class="moves">${movesOf(r,p)}</div><div class="score">${r.score??'—'}<small>PvPoke 점수</small></div><button class="btn tiny detail-arrow" data-action="inspect" data-id="${escapeHTML(r.speciesId)}" aria-label="개체값 순위표 보기">IV 순위</button></div>`;}).join('');$('#rankList').innerHTML=html||'<div class="empty">검색 결과가 없습니다.</div>';$('#moreBtn').style.display=list.length>visibleRows?'inline-block':'none';}
 function selectPokemon(id){if(!dataReady)return;const p=pokemonById.get(id);if(!p)return;editingOwnedId=null;selectedSpecies=p;$('#speciesInput').value=nameOf(p);$('#speciesSuggestions').classList.remove('show');markAnalysisDirty();}
 function markAnalysisDirty(){lastAnalysis=null;$('#saveOwnedBtn').disabled=true;$('#resultBlock').innerHTML='';}
@@ -878,6 +886,132 @@ function initTeamBuilder(){
 }
 
 
+
+/* -------- Opt-in, league-specific user team leaderboard -------- */
+let boardLeague='great', boardRows=[], boardBusy=false, boardMyRows=new Map(), boardRequest=0;
+function boardUserName(){
+ const email=String(cloudSession?.user?.email||'');
+ const name=email.split('@')[0].toLowerCase();
+ return /^[a-z0-9_]{3,24}$/.test(name)?name:'';
+}
+function boardStatus(message,error=false){
+ const el=$('#boardFeedback');if(!el)return;el.textContent=message;el.style.color=error?'var(--bad)':'var(--muted)';
+}
+function boardBest(league){
+ if(!dataReady)return null;
+ const result=teamCache[league]||(teamCache[league]=teamCompute(league));
+ return result.teams?.[0]||null;
+}
+function boardPublishPayload(league){
+ const best=boardBest(league);
+ if(!best)return null;
+ const roles=teamFindRoles(best.items);
+ return {
+  score:Math.round(best.score*100)/100,
+  team:roles.map(function(x){
+   const c=x.c;
+   return {speciesId:c.p.speciesId,speciesName:nameOf(c.p),role:x.role,a:c.owned.a,d:c.owned.d,h:c.owned.h,cp:c.owned.cp,projectedCp:c.cp};
+  })
+ };
+}
+function boardRender(){
+ const logged=!!cloudSession&&!!cloudUserId;
+ $('#boardLeagueSwitch button').forEach(function(b){b.classList.toggle('active',b.dataset.league===boardLeague);});
+ $('#boardTitle').textContent=LEAGUES[boardLeague].label+' · 사용자 최고 조합';
+ $('#boardPublish').disabled=!logged||!dataReady||boardBusy||!boardBest(boardLeague);
+ $('#boardRemove').disabled=!logged||boardBusy||!boardMyRows.has(boardLeague);
+ $('#boardRefresh').disabled=boardBusy;
+ const best=logged&&dataReady?boardPublishPayload(boardLeague):null;
+ const my=boardMyRows.get(boardLeague);
+ $('#boardMineHint').textContent=!logged?'로그인한 사용자만 조합을 게시하거나 조회할 수 있습니다.':
+  !dataReady?'포켓몬 데이터 로딩 중…':
+  !best?'현재 리그에 등록된 서로 다른 포켓몬 3마리가 필요합니다.':
+  '현재 최고 조합 '+best.score.toFixed(2)+'점'+(my?' · 기존 게시 '+Number(my.score).toFixed(2)+'점':' · 아직 게시하지 않음');
+ if(!logged){
+  $('#boardRows').innerHTML='<div class="empty">계정·동기화 탭에서 로그인하면 친구들의 조합 랭킹이 표시됩니다.</div>';return;
+ }
+ if(!boardRows.length){
+  $('#boardRows').innerHTML='<div class="empty">아직 게시된 조합이 없습니다. 첫 번째 최고 팀을 등록해 보세요.</div>';return;
+ }
+ $('#boardRows').innerHTML=boardRows.map(function(row,index){
+  const mine=row.user_id===cloudUserId;
+  const team=Array.isArray(row.team)?row.team:[];
+  const cards=team.map(function(c){
+   const name=escapeHTML(String(c.speciesName||c.speciesId||'알 수 없음').slice(0,60));
+   const iv=[c.a,c.d,c.h].every(function(v){return Number.isInteger(v)&&v>=0&&v<=15;})?
+    ' · IV '+[c.a,c.d,c.h].join('/'):'';
+   const role=escapeHTML(String(c.role||'').slice(0,15));
+   return '<div class="board-member"><b>'+name+'</b><div class="soft">'+role+iv+'</div></div>';
+  }).join('');
+  return '<article class="team-result board-result" style="margin-bottom:11px">'+
+   '<div class="row spread" style="margin-bottom:12px"><div class="row"><span class="team-place">'+(index+1)+'위</span><b>'+
+   escapeHTML(String(row.username||'').slice(0,24))+'</b>'+(mine?' <span class="chip">내 조합</span>':'')+
+   '</div><div class="team-score">'+Number(row.score).toFixed(2)+'점</div></div>'+
+   '<div class="board-roster">'+cards+'</div></article>';
+ }).join('');
+}
+async function boardRefresh(){
+ const seq=++boardRequest;
+ if(!cloudSession||!cloudClient||!cloudUserId){boardRows=[];boardMyRows=new Map();boardRender();return;}
+ const league=boardLeague;
+ boardBusy=true;boardStatus('조합 랭킹을 불러오는 중입니다…');boardRender();
+ try{
+  const r=await cloudClient.from('pvp_team_leaderboard')
+   .select('user_id,username,league,score,team,updated_at')
+   .eq('league',league).order('score',{ascending:false}).order('updated_at',{ascending:true}).limit(100);
+  if(r.error)throw r.error;
+  if(seq!==boardRequest||league!==boardLeague)return;
+  boardRows=r.data||[];
+  const own=boardRows.find(function(v){return v.user_id===cloudUserId;});
+  if(own)boardMyRows.set(league,own);else boardMyRows.delete(league);
+  boardStatus('등록된 사용자 '+boardRows.length+'명 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+' 갱신');
+ }catch(e){
+  if(seq===boardRequest)boardStatus('랭킹 불러오기 실패: '+(e.message||e),true);
+ }finally{if(seq===boardRequest){boardBusy=false;boardRender();}}
+}
+async function boardPublish(){
+ if(!cloudClient||!cloudSession||!cloudUserId){boardStatus('로그인이 필요합니다.',true);return;}
+ const name=boardUserName(),league=boardLeague;
+ if(!name){boardStatus('계정 아이디를 확인하지 못했습니다.',true);return;}
+ const info=boardPublishPayload(league);
+ if(!info){boardStatus('현재 리그에서 3마리로 구성된 최고 팀을 먼저 만들어 주세요.',true);return;}
+ if(!confirm(LEAGUES[league].label+' 최고 조합 '+info.score.toFixed(2)+'점을 친구들에게 공개하시겠습니까?'))return;
+ boardBusy=true;boardRender();boardStatus('최고 조합 게시 중…');
+ try{
+  const r=await cloudClient.from('pvp_team_leaderboard').upsert({
+   user_id:cloudUserId,username:name,league,score:info.score,team:info.team,score_version:'v1',
+   updated_at:new Date().toISOString()
+  },{onConflict:'user_id,league'});
+  if(r.error)throw r.error;
+  boardStatus('현재 최고 조합이 공개됐습니다.');
+  await boardRefresh();
+ }catch(e){boardStatus('게시 실패: '+(e.message||e),true);}
+ finally{boardBusy=false;boardRender();}
+}
+async function boardRemove(){
+ if(!cloudSession||!cloudClient||!cloudUserId||!boardMyRows.has(boardLeague))return;
+ const league=boardLeague;
+ if(!confirm(LEAGUES[league].label+'에서 공개한 내 조합을 삭제하시겠습니까?'))return;
+ boardBusy=true;boardRender();
+ try{
+  const r=await cloudClient.from('pvp_team_leaderboard').delete().eq('user_id',cloudUserId).eq('league',league);
+  if(r.error)throw r.error;
+  boardMyRows.delete(league);
+  boardStatus('공개했던 조합을 삭제했습니다.');
+  await boardRefresh();
+ }catch(e){boardStatus('삭제 실패: '+(e.message||e),true);}
+ finally{boardBusy=false;boardRender();}
+}
+function boardInit(){
+ $('#boardLeagueSwitch button').forEach(function(b){
+  b.onclick=function(){boardLeague=b.dataset.league;boardRows=[];boardRefresh();};
+ });
+ $('#boardPublish').onclick=boardPublish;
+ $('#boardRemove').onclick=boardRemove;
+ $('#boardRefresh').onclick=boardRefresh;
+ boardRender();
+}
+
 /* ---------------- Account synchronization (Supabase) ---------------- */
 const CLOUD_CONFIG = window.PVP_CLOUD_CONFIG || {};
 let cloudClient=null, cloudSession=null, cloudUserId='', cloudKnown=new Map(), cloudPending={}, cloudBusy=false, cloudAgain=false, cloudUploadTimer=0, cloudEpoch=0, cloudInitialLoading=false, cloudPreferences=null;
@@ -960,7 +1094,7 @@ function cloudApplyPreferences(v){
 async function cloudHandleSession(session){
  const nextId=session?.user?.id||'';
  if(nextId===cloudUserId){cloudSession=session||null;cloudRenderUI();return;}
- ++cloudEpoch;clearTimeout(cloudUploadTimer);cloudSession=session||null;cloudUserId=nextId;cloudPending={};cloudKnown=new Map();
+ ++cloudEpoch;clearTimeout(cloudUploadTimer);cloudSession=session||null;cloudUserId=nextId;boardRows=[];boardMyRows=new Map();++boardRequest;cloudPending={};cloudKnown=new Map();
  if(nextId){
   cloudInitialLoading=true;
   try{let c=JSON.parse(localStorage.getItem(cloudKey('cache'))||'[]');if(!Array.isArray(c))c=[];cloudSetOwned(c);}catch{cloudSetOwned([]);}
@@ -974,7 +1108,7 @@ async function cloudHandleSession(session){
   try{teamSelected=JSON.parse(localStorage.getItem(TEAM_STORAGE_KEY)||'{}')||{};teamAnchors=JSON.parse(localStorage.getItem(TEAM_ANCHOR_KEY)||'{}')||{};}catch{teamSelected={};teamAnchors={};}
   cloudHeader('로컬 모드');
  }
- cloudRenderUI();
+ cloudRenderUI();if(document.querySelector('#view-leaderboard')?.classList.contains('active'))boardRefresh();
 }
 async function cloudSignIn(signup=false){
  if(!cloudClient)return;
@@ -1022,7 +1156,7 @@ function cloudInit(){
  cloudRenderUI();
 }
 
-function init(){initPhoto();loadOwned();initTeamBuilder();cloudInit();
+function init(){initPhoto();loadOwned();initTeamBuilder();cloudInit();boardInit();
  $('#backRank').onclick=()=>showTab('rankings');
  $$('#ivdexLeagues button').forEach(b=>b.onclick=()=>{ivdexLeague=b.dataset.league;ivdexPage=0;$('#ivdexRank').value='';refreshIVDex();});
  $('#ivdexSearch').onclick=()=>{ivdexPage=0;refreshIVDex();};
