@@ -910,7 +910,7 @@ function boardPublishPayload(league){
   score:Math.round(best.score*100)/100,
   team:roles.map(function(x){
    const c=x.c;
-   return {speciesId:c.p.speciesId,speciesName:nameOf(c.p),role:x.role,a:c.owned.a,d:c.owned.d,h:c.owned.h,cp:c.owned.cp,projectedCp:c.cp};
+   return {speciesId:c.p.speciesId,speciesName:nameOf(c.p),role:x.role,a:c.owned.a,d:c.owned.d,h:c.owned.h};
   })
  };
 }
