@@ -761,6 +761,76 @@ function drawScanPreview(bars){
    ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText(r.iv===null?'?':r.iv,x+5,y+4);
  });
 }
+
+/* Crop at original screenshot resolution, binarize first, then upscale.
+   Separate small CP letters from the larger numeric glyphs geometrically. */
+function photoBinaryRegion(img,box,mode){
+ const x=Math.max(0,Math.round(box[0]*img.width)),y=Math.max(0,Math.round(box[1]*img.height));
+ const w=Math.max(1,Math.min(img.width-x,Math.round(box[2]*img.width)-x));
+ const h=Math.max(1,Math.min(img.height-y,Math.round(box[3]*img.height)-y));
+ const pix=img.getContext('2d',{willReadFrequently:true}).getImageData(x,y,w,h).data;
+ const mask=new Uint8Array(w*h);
+ for(let i=0;i<mask.length;i++){
+  const r=pix[i*4],g=pix[i*4+1],b=pix[i*4+2],L=.2126*r+.7152*g+.0722*b;
+  const sat=Math.max(r,g,b)-Math.min(r,g,b);
+  mask[i]=mode==='name'?Number(L<145):Number(L>=(mode==='cp-soft'?155:170)&&sat<=(mode==='cp-soft'?90:75));
+ }
+ return {w,h,mask,x,y};
+}
+function photoComponents(region){
+ const {w,h,mask}=region,seen=new Uint8Array(mask.length),stack=new Int32Array(mask.length),out=[];
+ for(let i=0;i<mask.length;i++){
+  if(!mask[i]||seen[i])continue;
+  let size=0,top=0,minX=w,minY=h,maxX=-1,maxY=-1;
+  stack[top++]=i;seen[i]=1;
+  while(top){
+   const n=stack[--top],x=n%w,y=(n/w)|0;size++;
+   minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    if(!dx&&!dy)continue;
+    const xx=x+dx,yy=y+dy;if(xx<0||xx>=w||yy<0||yy>=h)continue;
+    const v=yy*w+xx;if(mask[v]&&!seen[v]){seen[v]=1;stack[top++]=v;}
+   }
+  }
+  out.push({x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1,area:size});
+ }
+ return out;
+}
+function photoBinaryCanvas(region,bounds=null){
+ const {w,h,mask}=region;
+ const rect=bounds||{x:0,y:0,w,h};
+ const base=document.createElement('canvas');base.width=rect.w;base.height=rect.h;
+ const ctx=base.getContext('2d'),data=ctx.createImageData(rect.w,rect.h);
+ for(let y=0;y<rect.h;y++)for(let x=0;x<rect.w;x++){
+  const v=mask[(rect.y+y)*w+rect.x+x]?0:255,i=(y*rect.w+x)*4;
+  data.data[i]=data.data[i+1]=data.data[i+2]=v;data.data[i+3]=255;
+ }
+ ctx.putImageData(data,0,0);
+ const scale=Math.max(1.5,Math.min(3,1500/rect.w,450/rect.h)),pad=24;
+ const out=document.createElement('canvas');out.width=Math.round(rect.w*scale)+2*pad;out.height=Math.round(rect.h*scale)+2*pad;
+ const dest=out.getContext('2d');dest.fillStyle='white';dest.fillRect(0,0,out.width,out.height);
+ dest.imageSmoothingEnabled=false;
+ dest.drawImage(base,pad,pad,out.width-2*pad,out.height-2*pad);return out;
+}
+function photoDigitBounds(region,W,H){
+ const parts=photoComponents(region).filter(c=>c.h>=H*.014&&c.h<=H*.045&&c.w<=W*.10&&c.area>=W*H*.00002);
+ if(!parts.length)return null;
+ const tallest=Math.max(...parts.map(c=>c.h));
+ const digits=parts.filter(c=>c.h>=tallest*.75).sort((a,b)=>a.x-b.x);
+ if(digits.length<2||digits.length>5)return null;
+ const left=Math.min(...digits.map(c=>c.x)),top=Math.min(...digits.map(c=>c.y));
+ const right=Math.max(...digits.map(c=>c.x+c.w)),bottom=Math.max(...digits.map(c=>c.y+c.h));
+ // Reject unrelated UI elements and discontinuous groups, not low CP values.
+ if(bottom-top>tallest*1.25||right-left>W*.35)return null;
+ if(digits.some((c,i)=>i>0&&c.x-digits[i-1].x-digits[i-1].w>tallest*.65))return null;
+ return {x:left,y:top,w:right-left,h:bottom-top};
+}
+function photoDigitCrop(img,box,mode){
+ const region=photoBinaryRegion(img,box,mode);
+ const bounds=photoDigitBounds(region,img.width,img.height);
+ return bounds?photoBinaryCanvas(region,bounds):null;
+}
+
 function getOcrCrop(img,box,mode='name'){
  const x=Math.round(box[0]*img.width),y=Math.round(box[1]*img.height);
  const w=Math.max(1,Math.round((box[2]-box[0])*img.width)),h=Math.max(1,Math.round((box[3]-box[1])*img.height));
@@ -840,12 +910,12 @@ function choosePhotoCP(scans,p,ivs){
    const explicit=parsePhotoCP(scan.text);
    const n=explicit??(scan.confidence>=55?parsePhotoCP(scan.text,true):null);
    if(n===null)continue;
-   const v=votes.get(n)||{value:n,explicit:0,count:0,confidence:0};
-   v.count++;v.explicit+=explicit===null?0:1;v.confidence=Math.max(v.confidence,scan.confidence||0);
+   const v=votes.get(n)||{value:n,explicit:0,count:0,confidence:0,digits:0};
+   v.count++;v.explicit+=explicit===null?0:1;v.digits+=scan.source==='digits'?1:0;v.confidence=Math.max(v.confidence,scan.confidence||0);
    votes.set(n,v);
  }
  const scored=[...votes.values()].map(v=>({...v,fit:photoCpFits(p,ivs,v.value)}))
-  .filter(v=>v.fit!==false&&(v.explicit>0||v.count>=2||(v.fit===true&&v.confidence>=75)))
+  .filter(v=>v.fit!==false&&(v.explicit>0||v.count>=2||(v.fit===true&&v.digits>0&&v.confidence>=55)||(v.fit===true&&v.confidence>=75)))
   .sort((a,b)=>(Number(b.fit===true)-Number(a.fit===true))||(b.explicit-a.explicit)||(b.count-a.count)||(b.confidence-a.confidence));
  if(!scored.length)return null;
  const a=scored[0],b=scored[1];
@@ -907,43 +977,56 @@ async function processPhoto(){
  try{
    setScanStatus('막대 분석 완료 · 이름/CP OCR 모듈 준비 중…');
    const T=await loadOCRLib();
-   const worker=await T.createWorker(['kor','eng'],1,{logger:m=>{
-     if(m.status==='recognizing text')setScanStatus(`글자 인식 중… ${Math.round((m.progress||0)*100)}%`);
-   }});
+   const logger=m=>{if(m.status==='recognizing text')setScanStatus('글자 인식 중… '+Math.round((m.progress||0)*100)+'%');};
+   let worker=null;
+   const nameScans=[],cpScans=[];
    try{
-     const nameScans=[],cpScans=[];
-     const nameBoxes=[[.20,.335,.80,.405],[.19,.385,.81,.465],[.18,.275,.82,.35]];
+     worker=await T.createWorker('kor',1,{logger});
      await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:''});
+     // Actual portrait appraisal samples place the name between .385 and .414.
+     // Include the entire glyph height and remove the light-grey pencil icon.
+     const nameBoxes=[[.20,.373,.80,.421],[.20,.350,.80,.402],[.20,.402,.80,.450]];
      for(const box of nameBoxes){
-       const n=await worker.recognize(getOcrCrop(scanImage,box,'dark'));
-       nameScans.push(String(n.data.text||'').trim());
+       const n=await worker.recognize(photoBinaryCanvas(photoBinaryRegion(scanImage,box,'name')));
+       const raw=String(n.data.text||'').trim();
+       if(raw)nameScans.push(raw);
+       nameRaw=nameScans.join('\n');nameMatch=findPhotoSpecies(nameRaw);
+       if(nameMatch.certain&&nameMatch.alternates[0]?.score===0)break;
      }
-     nameRaw=nameScans.join('\n');nameMatch=findPhotoSpecies(nameRaw);
-     if(!nameMatch.certain){
-       // A wider crop catches names shifted by display size and appraisal layout.
+     if(!nameMatch?.certain){
        await worker.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:''});
        const n=await worker.recognize(getOcrCrop(scanImage,[.12,.25,.88,.53],'name'));
        nameScans.push(String(n.data.text||'').trim());
        nameRaw=nameScans.join('\n');nameMatch=findPhotoSpecies(nameRaw);
      }
-     // CP has different typography and should not use Korean-name segmentation.
-     await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'CPcp0123456789, .'});
-     const cpBoxes=[[.20,.005,.80,.085],[.20,.043,.80,.12],[.24,.092,.76,.165]];
-     for(const box of cpBoxes){
-       const c=await worker.recognize(getOcrCrop(scanImage,box,'cp'));
-       cpScans.push({text:String(c.data.text||'').trim(),confidence:Number(c.data.confidence)||0});
-     }
+   }finally{if(worker)await worker.terminate();}
+   worker=null;
+   try{
+     // English digit model only. The smaller CP prefix is excluded from the crop.
+     worker=await T.createWorker('eng',1,{logger});
+     await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'0123456789'});
      const p=nameMatch?.certain?nameMatch.candidate:null;
-     cp=choosePhotoCP(cpScans,p,bars.ivs);
-     if(cp===null){
-       for(const box of [[.18,.005,.82,.10],[.20,.04,.80,.145]]){
-         const c=await worker.recognize(getOcrCrop(scanImage,box,'cp-soft'));
-         cpScans.push({text:String(c.data.text||'').trim(),confidence:Number(c.data.confidence)||0});
-       }
+     const primaryBox=[.22,.005,.67,.055];
+     for(const mode of ['cp','cp-soft']){
+       const cropped=photoDigitCrop(scanImage,primaryBox,mode);
+       if(!cropped)continue;
+       const c=await worker.recognize(cropped);
+       cpScans.push({text:String(c.data.text||'').trim(),confidence:Number(c.data.confidence)||0,source:'digits'});
        cp=choosePhotoCP(cpScans,p,bars.ivs);
+       if(cp!==null&&photoCpFits(p,bars.ivs,cp)===true)break;
+     }
+     if(cp===null){
+       // Narrow full-label fallback for screenshots whose digits cannot be isolated.
+       await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'CPcp0123456789, .'});
+       for(const box of [[.30,.006,.68,.052],[.18,.005,.78,.085],[.20,.043,.80,.12]]){
+         const c=await worker.recognize(getOcrCrop(scanImage,box,'cp-soft'));
+         cpScans.push({text:String(c.data.text||'').trim(),confidence:Number(c.data.confidence)||0,source:'label'});
+         cp=choosePhotoCP(cpScans,p,bars.ivs);
+         if(cp!==null)break;
+       }
      }
      cpRaw=cpScans.map(v=>v.text).filter(Boolean).join(' / ');
-   }finally{await worker.terminate();}
+   }finally{if(worker)await worker.terminate();}
    nameMatch=nameMatch||findPhotoSpecies(nameRaw);
    if(nameMatch.candidate&&nameMatch.certain){
      selectPokemon(nameMatch.candidate.speciesId);
