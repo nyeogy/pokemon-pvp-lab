@@ -159,7 +159,7 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 <p class="hint">추천 역할(선봉·교체·마무리)은 타입 상성과 순위로 추정하며 실전 교체·에너지·실드 시뮬레이션이 아닙니다. 특별 기술의 습득 조건, 사탕·별의모래 비용, 그림자 개체의 실제 기술 보유 여부는 별도로 확인해 주세요. 현재 CP 1300~1500은 슈퍼, 2200~2500은 하이퍼, 2501 이상은 마스터에 자동 배정합니다. 나머지는 보관만 하고 팀에서 제외합니다. 진화 후 CP 제한도 확인합니다.</p>
 </section>
 <section class="view" id="view-teamdetail">
- <div class="section-head"><div><h3>선택한 조합 상세 분석</h3><div class="sub">선택한 팀의 상성, 메타 대응, 운용과 개선 방향을 확인합니다.</div></div><button type="button" class="btn ghost" id="detailBack">← 최적 팀 TOP 5</button></div>
+ <div class="section-head"><div><h3>선택한 조합 상세 분석</h3><div class="sub">선택한 팀의 방어·공격 상성, 메타 대응과 개선 방향을 확인합니다.</div></div><button type="button" class="btn ghost" id="detailBack">← 최적 팀 TOP 5</button></div>
  <div class="league-switch" id="detailLeagueSwitch" style="margin:14px 0"><button type="button" data-league="great" class="active">슈퍼리그</button><button type="button" data-league="ultra">하이퍼리그</button><button type="button" data-league="master">마스터리그</button></div>
  <div id="teamDetailContent"><div class="empty">최적 팀 TOP 5에서 조합을 먼저 선택하세요.</div></div>
  <p class="hint">분석은 현재 PvPoke 랭킹, 추천 기술과 타입 상성에 기반한 추정입니다. 대전 시뮬레이션, 실제 승률, 실드·에너지 상황별 최적 행동을 보장하지 않습니다.</p>
@@ -1250,7 +1250,7 @@ function renderTeamDetail(){
   el.innerHTML='<div class="empty"><b>'+(teamSelected[detailLeague]?'선택했던 조합을 현재 보관함에서 구성할 수 없습니다.':'이 리그에서 선택한 조합이 없습니다.')+'</b><p>최적 팀 TOP 5에서 사용할 조합을 선택하세요.</p><button class="btn primary" type="button" id="detailChoose">조합 선택하기</button></div>';
   $('#detailChoose').onclick=()=>{teamLeague=detailLeague;showTab('teams');};return;
  }
- const roles=t.roles,lead=roles[0].c,swap=roles[1].c,closer=roles[2].c;
+ const roles=t.roles;
  const types=TEAM_ATTACK_TYPES;
  const gaps=types.filter(type=>roles.some(({c})=>teamEffectiveness(type,c.types)>1.05)&&roles.every(({c})=>teamEffectiveness(type,c.types)>=.96));
  const core=roles.slice().sort((a,b)=>{
@@ -1265,12 +1265,21 @@ function renderTeamDetail(){
   const missing=weaknesses.filter(x=>!covered.some(v=>v.types.includes(x)));
   return '<div class="detail-note"><b>'+role+' · '+detailMember(c)+'</b><div>'+(covered.length?covered.map(v=>detailMember(v.z)+' → '+escapeHTML(detailNames(v.types))).join(' / '):'저항으로 직접 보완할 팀원 없음')+'</div><div class="soft">'+(missing.length?'저항으로 보완되지 않는 약점: '+escapeHTML(detailNames(missing)):'모든 타입 약점에 저항하는 팀원이 있음')+'</div></div>';
  }).join('');
- const switchPlans=types.filter(type=>teamEffectiveness(type,lead.types)>1.05).map(type=>{
-  const alternatives=[swap,closer].map(c=>({c,m:teamEffectiveness(type,c.types)})).sort((a,b)=>a.m-b.m);
-  const best=alternatives[0];
-  return '<div class="detail-note"><b>'+escapeHTML(TYPES[type])+' 기술을 사용하는 상대</b><div>'+(best.m<.96?detailMember(best.c)+'로 교체 고려 · 받는 피해 ×'+best.m.toFixed(2):best.m<=1.05?detailMember(best.c)+'는 중립 피해 · 교체 전 상대 기술 확인':'두 교체 후보 모두 약점 · 무리한 교체 주의')+'</div></div>';
+ const attackRows=types.map(type=>{
+  const hitters=roles.filter(({c})=>detailBestHit(detailMoveTypes(c),[type])>1.05);
+  return {type,hitters};
+ });
+ const coveredAttack=attackRows.filter(r=>r.hitters.length);
+ const missingAttack=attackRows.filter(r=>!r.hitters.length);
+ const singleAttack=attackRows.filter(r=>r.hitters.length===1);
+ const attackNotes=roles.map(({c})=>{
+  const moves=detailMoveTypes(c);
+  const targets=coveredAttack.filter(r=>r.hitters.some(h=>h.c===c)).map(r=>r.type);
+  const exclusive=singleAttack.filter(r=>r.hitters[0].c===c).map(r=>r.type);
+  return '<div class="detail-note"><b>'+detailMember(c)+'</b><div>'+escapeHTML(moves.length?'공략 가능: '+(detailNames(targets)||'없음'):'추천 기술 타입 정보 없음')+'</div>'+(exclusive.length?'<div class="soft">이 포켓몬만 공략 가능: '+escapeHTML(detailNames(exclusive))+'</div>':'')+'</div>';
  }).join('');
- const fragile=roles.slice().sort((a,b)=>a.c.def*a.c.hp-b.c.def*b.c.hp)[0];
+ const attackSummary='<div class="info"><b>효과적으로 공격 가능한 단일 타입 '+coveredAttack.length+' / '+types.length+'개</b><div style="height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin:9px 0"><div style="height:100%;width:'+(100*coveredAttack.length/types.length)+'%;background:#6bc9ae"></div></div><div class="soft">'+(missingAttack.length?'효과가 굉장한 기술이 확인되지 않은 타입: '+escapeHTML(detailNames(missingAttack)):'18개 단일 타입 모두 공략 가능')+'</div></div>';
+ const attackPanel=attackSummary+attackNotes+'<p class="hint">추천 노말·스페셜 기술의 타입을 기준으로 계산합니다. 이중 타입, 실제 기술 보유 여부, 위력·에너지·실드는 별도 고려해야 하며 누락된 기술 정보가 있으면 공략 범위가 과소평가될 수 있습니다.</p>';
  const threats=detailMatchups(t,detailLeague);
  const danger=threats.map(o=>{
   const bad=o.matches.filter(m=>m.risk).map(m=>detailMember(m.c));
@@ -1280,7 +1289,7 @@ function renderTeamDetail(){
  const recruits=detailRecruitment(t,detailLeague);
  const upgrades=recruits.map(x=>'<div class="detail-threat">'+portraitImg(x.p)+'<div><b>'+detailMember({p:x.p})+'</b> <span class="soft">리그 '+fmt(x.rank.rank)+'위</span><div>'+detailMember(x.replaced)+' 대신 고려 · <b class="team-good">+'+x.gain.toFixed(1)+'점</b></div><div class="soft">'+(x.fixed.length?'완화 가능한 공통 약점: '+escapeHTML(detailNames(x.fixed)):'종합 성능 또는 공격 범위 개선')+'</div></div></div>').join('');
  el.innerHTML='<div class="panel"><div class="row spread"><div><h3 style="margin:0">'+LEAGUES[detailLeague].label+' 선택 조합</h3><div class="sub">조합 유형: '+style+'</div></div><div class="team-score">'+t.score.toFixed(1)+'점</div></div><div class="team-roster" style="margin-top:15px">'+roster+'</div><div class="info" style="margin-top:12px"><b>상성 보완 핵심: '+detailMember(core.c)+'</b><div class="sub">다른 팀원의 약점을 저항으로 받아낼 수 있는 타입 수를 우선 평가했습니다.</div><div style="margin-top:8px">'+(gaps.length?'저항 없이 노출된 약점: '+escapeHTML(detailNames(gaps)):'모든 노출 약점에 저항하는 팀원이 있습니다.')+'</div></div></div>'+
- '<div class="detail-grid"><div class="panel"><h3>상성 보완 관계</h3>'+covers+'</div><div class="panel"><h3>교체 및 실드 운용 참고</h3>'+ (switchPlans||'<p class="sub">선봉에게 명확한 타입 약점이 없습니다.</p>')+'<p class="hint">상대가 가진 실제 기술, 교체 대기시간과 에너지에 따라 판단하세요. '+detailMember(fragile.c)+'는 팀 내 추정 방어력×HP가 가장 낮으므로 실드 사용 여부를 상황에 맞게 고려하세요. 실드 우선순위를 계산한 것은 아닙니다.</p></div></div>'+
+ '<div class="detail-grid"><div class="panel"><h3>상성 보완 관계</h3>'+covers+'</div><div class="panel"><h3>공격 상성 분석</h3>'+attackPanel+'</div></div>'+
  '<div class="panel"><h3>주의할 상대 포켓몬 TOP 5</h3><p class="sub">리그 종합 상위 50마리의 추천 기술과 양방향 타입 상성 비교입니다. 실제 승패나 출현 빈도는 반영하지 않습니다.</p>'+(danger||'<div class="empty">현재 기준에서 뚜렷하게 불리한 상대가 확인되지 않았습니다. 기술 정보가 부족한 상대는 제외됩니다.</div>')+'</div>'+
  '<div class="panel"><h3>영입 추천 TOP 3</h3><p class="sub">리그 상위 50마리 중 보관함 및 진화 가능 종에 없는 후보를 한 자리씩 교체해 비교했습니다. IV 효율 96점 가정의 예상 점수이며 실제 육성 가능성과 사탕·별의모래 비용은 별도 확인하세요.</p>'+(upgrades||'<div class="empty">이 기준에서 더 높은 점수를 만드는 미보유 후보가 확인되지 않았습니다.</div>')+'</div>'+
  '<div class="panel">'+teamTypeMatrix(t)+'</div>';
