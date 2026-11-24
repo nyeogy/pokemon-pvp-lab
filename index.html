@@ -145,16 +145,16 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
   </div></div>
  </div>
 </div>
-<div class="panel"><form id="analyzeForm"><div class="formgrid"><div class="field speciesfield"><label for="speciesInput">포켓몬 선택</label><div class="autocomplete"><input autocomplete="off" id="speciesInput" placeholder="예: 파이리, Corviknight, 릴리요" required><div class="suggestions" id="speciesSuggestions"></div></div></div><div class="field"><label for="ivA">공격 IV</label><input id="ivA" type="number" min="0" max="15" value="0" required></div><div class="field"><label for="ivD">방어 IV</label><input id="ivD" type="number" min="0" max="15" value="15" required></div><div class="field"><label for="ivH">HP IV</label><input id="ivH" type="number" min="0" max="15" value="15" required></div></div><div class="row spread" style="margin-top:15px"><div class="row"><div class="field" style="width:180px"><label for="nickname">별명 (선택)</label><input id="nickname" placeholder="예: 하이퍼용"></div><div class="field" style="width:140px"><label for="ownedCP">현재 CP (필수)</label><input id="ownedCP" type="number" min="10" max="10000" required placeholder="예: 947"></div><div class="field" style="width:185px"><label for="ownedLeague">육성 목표 리그</label><select id="ownedLeague" required><option value="">리그 선택</option><option value="great">슈퍼리그</option><option value="ultra">하이퍼리그</option><option value="master">마스터리그</option><option value="undecided">미정 (팀 추천 제외)</option></select></div></div><div class="row"><label class="checkrow"><input type="checkbox" id="buddyCap">베스트파트너 레벨 51 포함</label></div></div><div class="row" style="margin-top:19px"><button class="btn primary" type="submit" id="analyzeBtn">개체값 순위 계산</button><button class="btn" type="button" id="saveOwnedBtn" disabled>이 개체 보관함에 저장</button></div><p class="hint">정확한 순위는 포켓몬 종·폼·IV에 따라 계산합니다. 그림자 개체는 그림자 폼으로 선택하세요. 마스터리그는 레벨 50(또는 51) 기준입니다.</p></form></div><div id="resultBlock"></div></section>
+<div class="panel"><form id="analyzeForm"><div class="formgrid"><div class="field speciesfield"><label for="speciesInput">포켓몬 선택</label><div class="autocomplete"><input autocomplete="off" id="speciesInput" placeholder="예: 파이리, Corviknight, 릴리요" required><div class="suggestions" id="speciesSuggestions"></div></div></div><div class="field"><label for="ivA">공격 IV</label><input id="ivA" type="number" min="0" max="15" value="0" required></div><div class="field"><label for="ivD">방어 IV</label><input id="ivD" type="number" min="0" max="15" value="15" required></div><div class="field"><label for="ivH">HP IV</label><input id="ivH" type="number" min="0" max="15" value="15" required></div></div><div class="row spread" style="margin-top:15px"><div class="row"><div class="field" style="width:180px"><label for="nickname">별명 (선택)</label><input id="nickname" placeholder="예: 하이퍼용"></div><div class="field" style="width:140px"><label for="ownedCP">현재 CP (필수)</label><input id="ownedCP" type="number" min="10" max="10000" required placeholder="예: 947"></div><div class="field" style="width:185px"><label>자동 팀 분류</label><div id="autoLeagueLabel" class="chip muted" aria-live="polite" style="margin-top:5px">CP 입력 필요</div></div></div><div class="row"><label class="checkrow"><input type="checkbox" id="buddyCap">베스트파트너 레벨 51 포함</label></div></div><div class="row" style="margin-top:19px"><button class="btn primary" type="submit" id="analyzeBtn">개체값 순위 계산</button><button class="btn" type="button" id="saveOwnedBtn" disabled>이 개체 보관함에 저장</button></div><p class="hint">팀 자동 분류: CP 1300~1500 슈퍼리그 · 2200~2500 하이퍼리그 · 2501 이상 마스터리그 · 그 외 보관만. 육성 가치 분석은 모든 리그를 비교합니다. 정확한 순위는 포켓몬 종·폼·IV에 따라 계산합니다. 그림자 개체는 그림자 폼으로 선택하세요. 마스터리그는 레벨 50(또는 51) 기준입니다.</p></form></div><div id="resultBlock"></div></section>
 <section class="view" id="view-collection"><div class="section-head"><div><h3>내 포켓몬 보관함</h3><div class="sub">로그인하면 다른 기기와 자동 동기화됩니다. 로그인하지 않으면 이 기기에만 저장됩니다.</div></div><div class="row"><button class="btn primary" id="goAdd">+ 포켓몬 추가</button></div></div><div id="ownedList"></div></section>
 <section class="view" id="view-teams">
-<div class="section-head"><div><h3>내 포켓몬 최적 팀 TOP 5</h3><div class="sub">현재 CP 및 목표 리그를 고려하여 최대 강화 시점의 3마리 팀을 비교합니다.</div></div><div class="league-switch" id="teamLeagueSwitch"><button data-league="great" class="active">슈퍼 · 1,500</button><button data-league="ultra">하이퍼 · 2,500</button><button data-league="master">마스터 · 무제한</button></div></div>
+<div class="section-head"><div><h3>내 포켓몬 최적 팀 TOP 5</h3><div class="sub">현재 CP로 리그를 자동 분류하여 최대 강화 시점의 3마리 팀을 비교합니다.</div></div><div class="league-switch" id="teamLeagueSwitch"><button data-league="great" class="active">슈퍼 · 1,500</button><button data-league="ultra">하이퍼 · 2,500</button><button data-league="master">마스터 · 무제한</button></div></div>
 <div class="info"><b>추천 방식:</b> 각 개체를 레벨 50 이하에서 CP 제한을 넘지 않는 최고 레벨까지 강화한다고 가정합니다. 진화형도 평가하며, 동일한 보유 개체나 동일한 포켓몬 종을 한 팀에 중복하지 않습니다. 보관함이나 랭킹 데이터가 바뀌면 자동 재평가합니다.<div style="margin-top:7px">자체 비교 점수 = 리그 순위 50% + 방어 상성 보완 30% + 추천 기술 공격 범위 15% + 개체값 효율 5%. <strong>전투 시뮬레이션이나 승률 예측 점수가 아닙니다.</strong></div></div>
 <div class="team-anchor-panel"><div class="row spread"><div><label for="teamAnchorSelect">📌 반드시 포함할 포켓몬</label><div class="sub">보유 개체와 진화형을 선택하면 해당 포켓몬이 포함된 팀만 1~5위로 추천합니다. 선택하지 않으면 전체 최적 조합을 보여줍니다.</div></div><div class="team-anchor-actions"><select id="teamAnchorSelect" aria-label="팀에 고정할 포켓몬"><option value="">전체 보관함에서 자동 추천</option></select><button class="btn tiny ghost" type="button" id="teamAnchorClear">고정 해제</button></div></div></div>
 <div class="row spread mb18"><span class="sub" id="teamSummary">등록된 포켓몬을 확인하는 중…</span><span class="chip muted">선택한 조합은 이 브라우저에 저장</span></div>
 <div id="teamResults"><div class="empty">포켓몬을 등록하면 상위 5개 팀을 비교합니다.</div></div>
 <div class="panel training-panel"><div class="section-head"><div><h3>🌱 내 포켓몬 육성 우선순위</h3><div class="sub">최대 강화 시점을 가정해, 각 개체가 최고의 팀 구성에 얼마나 기여하는지 비교합니다.</div></div><span class="chip muted">포켓몬 고정 여부와 독립적으로 평가</span></div><div id="teamTrainingList"><div class="empty">3마리 이상 등록하면 육성 우선순위를 계산합니다.</div></div></div>
-<p class="hint">추천 역할(선봉·교체·마무리)은 타입 상성과 순위로 추정하며 실전 교체·에너지·실드 시뮬레이션이 아닙니다. 특별 기술의 습득 조건, 사탕·별의모래 비용, 그림자 개체의 실제 기술 보유 여부는 별도로 확인해 주세요. 현재 CP와 목표 리그가 지정된 포켓몬만 해당 리그 팀 후보에 포함됩니다. 진화 후 CP 제한도 확인합니다.</p>
+<p class="hint">추천 역할(선봉·교체·마무리)은 타입 상성과 순위로 추정하며 실전 교체·에너지·실드 시뮬레이션이 아닙니다. 특별 기술의 습득 조건, 사탕·별의모래 비용, 그림자 개체의 실제 기술 보유 여부는 별도로 확인해 주세요. 현재 CP 1300~1500은 슈퍼, 2200~2500은 하이퍼, 2501 이상은 마스터에 자동 배정합니다. 나머지는 보관만 하고 팀에서 제외합니다. 진화 후 CP 제한도 확인합니다.</p>
 </section>
 <section class="view" id="view-leaderboard">
  <div class="section-head"><div><h3>🏅 사용자별 최고 조합 랭킹</h3><div class="sub">친구들과 최고의 3마리 조합을 공유하세요. 리그마다 사용자당 최고 조합 하나만 게시할 수 있습니다.</div></div></div>
@@ -400,8 +400,8 @@ function renderAnalysis(){
  const {p,a,d,h,levelLimit,result}=lastAnalysis;
  const cpRaw=$('#ownedCP').value.trim();
  const currentCp=cpRaw!==''?Number(cpRaw):null;
- const league=$('#ownedLeague').value;
- const evaluations=result.all.map(x=>({...x,decision:trainingDecision(x,p,a,d,h,currentCp,league)}));
+ const league=updateAutoLeague();
+ const evaluations=result.all.map(x=>({...x,decision:trainingDecision(x,p,a,d,h,currentCp,'undecided')}));
  const available=evaluations.filter(x=>x.decision.kind!=='other');
  const order={train:0,keep:1,pending:2,reject:3};
  available.sort((x,y)=>order[x.decision.kind]-order[y.decision.kind]||y.combined-x.combined);
@@ -456,13 +456,23 @@ function renderAnalysis(){
  ' CP가 낮아도 진화 자체가 불가능한 것은 아닙니다. 이 기준은 육성 부담을 간접 추정한 것으로 사탕·별의모래 실비, 실제 승률을 계산하지 않습니다.'+
  ' 마스터리그도 레벨 50(베스트파트너 선택 시 51)을 가정합니다.</p></div>';
 }
+function autoLeagueForCP(cp){
+ if(!Number.isInteger(cp)||cp<10||cp>10000)return 'undecided';
+ if(cp>=1300&&cp<=1500)return 'great';
+ if(cp>=2200&&cp<=2500)return 'ultra';
+ if(cp>2500)return 'master';
+ return 'undecided';
+}
+function updateAutoLeague(){
+ const value=$('#ownedCP').value.trim(),league=autoLeagueForCP(value?Number(value):null);
+ $('#autoLeagueLabel').textContent=LEAGUES[league]?LEAGUES[league].label:(value?'보관만 · 팀 제외':'CP 입력 필요');
+ return league;
+}
 function saveCurrent(){
  if(!lastAnalysis)return;
  const {p,a,d,h}=lastAnalysis;
- const cpString=$('#ownedCP').value.trim();const cp=cpString?Number(cpString):null;const targetLeague=$('#ownedLeague').value;
+ const cpString=$('#ownedCP').value.trim();const cp=cpString?Number(cpString):null;const targetLeague=autoLeagueForCP(cp);
  if(cp===null||!Number.isInteger(cp)||cp<10||cp>10000){alert('현재 CP를 입력하세요.');return;}
- if(!['great','ultra','master','undecided'].includes(targetLeague)){alert('육성 목표 리그를 선택하세요.');return;}
- if((targetLeague==='great'&&cp>1500)||(targetLeague==='ultra'&&cp>2500)){alert('선택한 리그의 CP 상한을 이미 초과했습니다.');return;}
  const record={id:editingOwnedId||'own-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),speciesId:p.speciesId,a,d,h,nick:$('#nickname').value.trim().slice(0,80),cp,targetLeague,ivStatus:'entered',createdAt:new Date().toISOString()};
  const index=editingOwnedId?owned.findIndex(o=>o.id===editingOwnedId):-1;
  if(index>=0){record.createdAt=owned[index].createdAt;record.note=owned[index].note||'';owned[index]=record;}
@@ -476,7 +486,7 @@ function renderOwned(){
    const p=pokemonById.get(o.speciesId),best=bestFamilyQuick(o.speciesId),hasIV=validIVs(o);
    const stats=hasIV?`공격 ${o.a} · 방어 ${o.d} · HP ${o.h} · ${Math.round((o.a+o.d+o.h)/45*100)}%`:'개체값 미확인';
    const estimate=hasIV&&o.ivStatus==='estimated'?'<span class="chip warning">과거 사진 판독 추정치 · 재확인 필요</span>':!hasIV?'<span class="chip warning">개체값 입력 필요</span>':'';
-   return `<div class="owned-card"><div>${portraitImg(p)}</div><div><div class="pk-name">${escapeHTML(o.nick||nameOf(p)||o.speciesId)} <span class="soft">${o.nick?'· '+escapeHTML(nameOf(p)):''}</span></div><div class="tagline">${stats}${o.cp?' · CP '+fmt(o.cp):''}${o.targetLeague&&LEAGUES[o.targetLeague]?' · 목표 '+LEAGUES[o.targetLeague].label:''}${o.note?' · '+escapeHTML(o.note):''}</div><div class="owned-badges">${estimate}${best?`<span class="chip">${escapeHTML(nameOf(best.species))} · ${LEAGUES[best.key].label} ${fmt(best.total)}마리 중 ${fmt(best.rank)}위</span>`:'<span class="chip muted">랭킹 미등재</span>'}</div></div><div class="buttons"><button class="btn tiny" data-owned="${escapeHTML(o.id)}" data-own-action="analyze">${hasIV?'분석·수정':'IV 입력'}</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="remove">삭제</button></div></div>`;
+   return `<div class="owned-card"><div>${portraitImg(p)}</div><div><div class="pk-name">${escapeHTML(o.nick||nameOf(p)||o.speciesId)} <span class="soft">${o.nick?'· '+escapeHTML(nameOf(p)):''}</span></div><div class="tagline">${stats}${o.cp?' · CP '+fmt(o.cp):''}${LEAGUES[autoLeagueForCP(o.cp)]?' · 자동 '+LEAGUES[autoLeagueForCP(o.cp)].label:' · 보관만'}${o.note?' · '+escapeHTML(o.note):''}</div><div class="owned-badges">${estimate}${best?`<span class="chip">${escapeHTML(nameOf(best.species))} · ${LEAGUES[best.key].label} ${fmt(best.total)}마리 중 ${fmt(best.rank)}위</span>`:'<span class="chip muted">랭킹 미등재</span>'}</div></div><div class="buttons"><button class="btn tiny" data-owned="${escapeHTML(o.id)}" data-own-action="analyze">${hasIV?'분석·수정':'IV 입력'}</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="remove">삭제</button></div></div>`;
  }).join('');
 }
 function goAnalyzeOwned(id){
@@ -485,7 +495,7 @@ function goAnalyzeOwned(id){
  $('#ivA').value=Number.isInteger(o.a)?o.a:'';
  $('#ivD').value=Number.isInteger(o.d)?o.d:'';
  $('#ivH').value=Number.isInteger(o.h)?o.h:'';
- $('#ownedCP').value=o.cp||'';$('#ownedLeague').value=o.targetLeague||'undecided';$('#nickname').value=o.nick||'';
+ $('#ownedCP').value=o.cp||'';updateAutoLeague();$('#nickname').value=o.nick||'';
  showTab('analyzer');
  if(validIVs(o))analyze();
  else $('#resultBlock').innerHTML='<div class="info">이 포켓몬의 이전 개체값 기록은 확인되지 않았습니다. 공격·방어·HP를 입력한 뒤 「개체값 순위 계산」을 누르고 「이 개체 보관함에 저장」을 누르면 기존 기록이 수정됩니다.</div>';
@@ -499,7 +509,7 @@ async function importOwned(file){try{
    if(!o||typeof o.speciesId!=='string'||!(validIVs(o)||['a','d','h'].every(k=>o[k]===null)))continue;
    const id=(typeof o.id==='string'&&o.id.length<120)?o.id:'import-'+Date.now()+'-'+count;
    if(owned.some(x=>x.id===id))continue;
-   owned.push({id,speciesId:o.speciesId,a:o.a,d:o.d,h:o.h,ivStatus:['estimated','entered','unknown'].includes(o.ivStatus)?o.ivStatus:(validIVs(o)?'entered':'unknown'),nick:String(o.nick||'').slice(0,80),note:String(o.note||'').slice(0,160),cp:Number.isInteger(o.cp)&&o.cp>0?o.cp:null,targetLeague:['great','ultra','master','undecided'].includes(o.targetLeague)?o.targetLeague:'undecided',createdAt:o.createdAt||new Date().toISOString()});count++;
+   owned.push({id,speciesId:o.speciesId,a:o.a,d:o.d,h:o.h,ivStatus:['estimated','entered','unknown'].includes(o.ivStatus)?o.ivStatus:(validIVs(o)?'entered':'unknown'),nick:String(o.nick||'').slice(0,80),note:String(o.note||'').slice(0,160),cp:Number.isInteger(o.cp)&&o.cp>0?o.cp:null,targetLeague:autoLeagueForCP(o.cp),createdAt:o.createdAt||new Date().toISOString()});count++;
  }
  persist();renderOwned();alert(`${count}마리를 복원했습니다.`);
  }catch(e){alert('백업 파일을 읽을 수 없습니다: '+e.message);}}
@@ -557,7 +567,7 @@ function refreshIVDex(){
 }
 function analyzePickedIV(a,d,h){
  selectPokemon(ivdexSpeciesId);$('#ivA').value=a;$('#ivD').value=d;$('#ivH').value=h;
- $('#ownedCP').value='';$('#ownedLeague').value='';$('#nickname').value='';editingOwnedId=null;
+ $('#ownedCP').value='';updateAutoLeague();$('#nickname').value='';editingOwnedId=null;
  showTab('analyzer');analyze();
 }
 
@@ -732,7 +742,7 @@ async function readPhoto(file){
    // Clear stale analysis from previously selected photos; nothing is stored.
    selectedSpecies=null;editingOwnedId=null;
    $('#speciesInput').value='';
-   ['ivA','ivD','ivH','ownedCP'].forEach(id=>$('#'+id).value='');
+   ['ivA','ivD','ivH','ownedCP'].forEach(id=>$('#'+id).value='');updateAutoLeague();
    markAnalysisDirty();
    $('#scanWorkspace').hidden=false;
    $('#scanDetails').hidden=true;
@@ -794,7 +804,7 @@ async function processPhoto(){
      $('#speciesInput').value=nameOf(nameMatch.candidate);
      selectedSpecies=null;
    }
-   if(cp!==null)$('#ownedCP').value=cp;
+   if(cp!==null)$('#ownedCP').value=cp;updateAutoLeague();
  }catch(error){
    console.warn('OCR unavailable; IV bar analysis remains available.',error);
    setScanStatus('문자 인식에 실패했습니다. 아래에서 포켓몬 이름과 CP를 직접 입력해 주세요.',true);
@@ -838,7 +848,7 @@ function invalidateTeamCache(){teamCache={great:null,ultra:null,master:null};tea
 function teamEffectiveness(attack,defenseTypes){let x=1;for(const t of defenseTypes||[]){if(TEAM_IMMUNE[attack]?.includes(t))x*=.390625;else if(TEAM_SUPER[attack]?.includes(t))x*=1.6;else if(TEAM_WEAK[attack]?.includes(t))x*=.625;}return x;}
 function teamCandidate(o,p,league){
  const rank=rankIndexes[league]?.get(p.speciesId);if(!rank||!p.baseStats||!validIVs(o))return null;
- if(o.targetLeague!==league || !Number.isInteger(o.cp) || o.cp<10)return null;
+ if(autoLeagueForCP(o.cp)!==league)return null;
  if(p.tags?.some(t=>t==='mega'||t==='primal')||p.released===false)return null;
  const maxIdx=Math.min(CPM.length-1,98),cap=LEAGUES[league].cap;
  if(o.cp&&o.cp>cap)return null; // A powered-up Pokémon can't be de-levelled.
@@ -1382,6 +1392,6 @@ function init(){const initialDataLoad=fetchData();$$('.tab').forEach(t=>t.onclic
  $('#ivdexNext').onclick=()=>{ivdexPage++;refreshIVDex();};
  ['ivdexAtk','ivdexDef','ivdexHp','ivdexRank'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ivdexPage=0;refreshIVDex();}}));
  $('#ivdexRows').addEventListener('click',e=>{const target=e.target.closest('[data-ivpick]');if(!target)return;const [a,d,h]=target.dataset.ivpick.split(',').map(Number);analyzePickedIV(a,d,h);});
-$$('#leagueButtons button').forEach(b=>b.onclick=()=>{activeLeague=b.dataset.league;visibleRows=60;$$('#leagueButtons button').forEach(v=>v.classList.toggle('active',v===b));renderRankings();});$('#rankSearch').oninput=()=>{visibleRows=60;renderRankings();};$('#moreBtn').onclick=()=>{visibleRows+=60;renderRankings();};$('#rankList').addEventListener('click',e=>{const t=e.target.closest('[data-id]');if(!t)return;openIVDex(t.dataset.id,activeLeague);});$('#speciesInput').addEventListener('input',()=>{selectedSpecies=null;editingOwnedId=null;markAnalysisDirty();suggestions();});['ivA','ivD','ivH'].forEach(id=>$('#'+id).addEventListener('input',markAnalysisDirty));$('#speciesInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#speciesSuggestions').classList.contains('show')){const first=$('#speciesSuggestions [data-choose]');if(first){e.preventDefault();selectPokemon(first.dataset.choose);}}});$('#speciesSuggestions').addEventListener('click',e=>{const t=e.target.closest('[data-choose]');if(t)selectPokemon(t.dataset.choose);});document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete'))$('#speciesSuggestions').classList.remove('show');});$('#analyzeForm').onsubmit=e=>{e.preventDefault();analyze();};$('#saveOwnedBtn').onclick=saveCurrent;$('#goAdd').onclick=()=>showTab('analyzer');$('#ownedList').addEventListener('click',e=>{const t=e.target.closest('[data-own-action]');if(!t)return;if(t.dataset.ownAction==='remove')removeOwned(t.dataset.owned);else goAnalyzeOwned(t.dataset.owned);});$('#refreshBtn').onclick=()=>fetchData(true);$('#exportBtn').onclick=exportOwned;$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async e=>{if(e.target.files?.[0])await importOwned(e.target.files[0]);e.target.value='';};['ownedCP','ownedLeague'].forEach(id=>$('#'+id).addEventListener(id==='ownedCP'?'input':'change',()=>{if(lastAnalysis)renderAnalysis();}));$('#buddyCap').onchange=()=>{if(lastAnalysis)analyze(true);};}
+$$('#leagueButtons button').forEach(b=>b.onclick=()=>{activeLeague=b.dataset.league;visibleRows=60;$$('#leagueButtons button').forEach(v=>v.classList.toggle('active',v===b));renderRankings();});$('#rankSearch').oninput=()=>{visibleRows=60;renderRankings();};$('#moreBtn').onclick=()=>{visibleRows+=60;renderRankings();};$('#rankList').addEventListener('click',e=>{const t=e.target.closest('[data-id]');if(!t)return;openIVDex(t.dataset.id,activeLeague);});$('#speciesInput').addEventListener('input',()=>{selectedSpecies=null;editingOwnedId=null;markAnalysisDirty();suggestions();});['ivA','ivD','ivH'].forEach(id=>$('#'+id).addEventListener('input',markAnalysisDirty));$('#speciesInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#speciesSuggestions').classList.contains('show')){const first=$('#speciesSuggestions [data-choose]');if(first){e.preventDefault();selectPokemon(first.dataset.choose);}}});$('#speciesSuggestions').addEventListener('click',e=>{const t=e.target.closest('[data-choose]');if(t)selectPokemon(t.dataset.choose);});document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete'))$('#speciesSuggestions').classList.remove('show');});$('#analyzeForm').onsubmit=e=>{e.preventDefault();analyze();};$('#saveOwnedBtn').onclick=saveCurrent;$('#goAdd').onclick=()=>showTab('analyzer');$('#ownedList').addEventListener('click',e=>{const t=e.target.closest('[data-own-action]');if(!t)return;if(t.dataset.ownAction==='remove')removeOwned(t.dataset.owned);else goAnalyzeOwned(t.dataset.owned);});$('#refreshBtn').onclick=()=>fetchData(true);$('#exportBtn').onclick=exportOwned;$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async e=>{if(e.target.files?.[0])await importOwned(e.target.files[0]);e.target.value='';};$('#ownedCP').addEventListener('input',()=>{updateAutoLeague();if(lastAnalysis)renderAnalysis();});updateAutoLeague();$('#buddyCap').onchange=()=>{if(lastAnalysis)analyze(true);};}
 try{init();}catch(e){console.error('시작 오류:',e);const el=document.getElementById('loadMessage');if(el){el.style.display='block';el.innerHTML='<div class="alert">초기화 중 오류가 발생했습니다: '+String(e?.message||e).replaceAll('<','&lt;')+'</div><button class="btn" onclick="location.reload()">새로고침</button>'; }}
 </script></body></html>
