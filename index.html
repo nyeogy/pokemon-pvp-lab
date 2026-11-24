@@ -129,15 +129,10 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 .portrait-frame{display:inline-flex;position:relative;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle;isolation:isolate;overflow:visible;border-radius:12px}
 .portrait-art{width:100%;height:100%;object-fit:contain;position:relative;z-index:1;display:block}
 .portrait-art[hidden]{display:none}
-.portrait-shadow{background:radial-gradient(ellipse at 50% 58%,#a268d14a 0%,#68338c35 47%,transparent 76%);box-shadow:inset 0 0 0 1px #9b6ed385}
-.portrait-shadow .portrait-art{filter:drop-shadow(0 0 4px #a45ef2) drop-shadow(0 0 2px #d0a9ff)}
-.portrait-shadow-mark,.portrait-region{position:absolute;z-index:2;font-size:9px;font-weight:850;line-height:1.15;padding:2px 3px;white-space:nowrap;border-radius:4px;pointer-events:none}
-.portrait-shadow-mark{right:-2px;top:-2px;background:#593178;color:#f4ddff;border:1px solid #b57ff2;box-shadow:0 1px 3px #0008}
-.portrait-region{bottom:0;left:50%;transform:translateX(-50%);background:#15263f;color:#c4dcff;border:1px solid #536d9f}
-.portrait-regional .portrait-art{height:calc(100% - 9px);align-self:flex-start}
+.portrait-shadow{background:radial-gradient(ellipse at 50% 58%,#a268d165 0%,#68338c50 45%,transparent 76%)}
+.portrait-shadow .portrait-art{filter:drop-shadow(0 0 3px #9e4bea) drop-shadow(0 0 6px #a45ef2)}
 .portrait-placeholder{display:none;color:var(--muted);font-weight:850;font-size:20px}
 .portrait-missing{border:1px dashed var(--line);background:var(--panel2)}.portrait-missing .portrait-placeholder{display:block}
-@media(max-width:640px){.portrait-shadow-mark,.portrait-region{font-size:8px;padding:1px 2px}}
 </style>
 </head>
 <body><div class="shell">
@@ -326,11 +321,9 @@ function portraitImg(p){
  if(!info)return '<span class="portrait portrait-frame portrait-missing" aria-label="이미지 없음">?</span>';
  const url=portrait(p);
  const label=escapeHTML(nameOf(p));
- const region=info.region?'<span class="portrait-region">'+escapeHTML(info.region)+'</span>':'';
- const shadow=info.shadow?'<span class="portrait-shadow-mark">그림자</span>':'';
  const fallback=info.unmapped?'폼 이미지 없음':'이미지 없음';
  const image=url?'<img class="portrait-art" alt="'+label+'" loading="lazy" src="'+url+'" data-fallback="'+POKE_SPRITES+'other/official-artwork/'+info.sprite+'.png" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback;}else{this.hidden=true;this.parentElement.classList.add(\'portrait-missing\');}">':'';
- return '<span class="portrait portrait-frame'+(info.shadow?' portrait-shadow':'')+(info.region?' portrait-regional':'')+(!url?' portrait-missing':'')+'" title="'+label+'">'+image+'<span class="portrait-placeholder" aria-label="'+fallback+'">?</span>'+region+shadow+'</span>';
+ return '<span class="portrait portrait-frame'+(info.shadow?' portrait-shadow':'')+(!url?' portrait-missing':'')+'" title="'+label+'">'+image+'<span class="portrait-placeholder" aria-label="'+fallback+'">?</span>'+'</span>';
 }
 function movesOf(rank,p){let arr=rank?.moveset||[];return arr.map((m,i)=>{const translated=localMoveName(m);const elite=(p?.eliteMoves||[]).includes(m)||(p?.legacyMoves||[]).includes(m);return '<span title="'+escapeHTML(m)+'">'+escapeHTML(translated)+(elite?'<span class="warn">*</span>':'')+'</span>';}).join(' · ');}
 function familyOf(p){if(!p)return [];const descendants=[];const seen=new Set();const visit=(id,depth)=>{if(!id||seen.has(id)||depth>5)return;seen.add(id);const target=pokemonById.get(id);if(!target||target.tags?.includes('mega')||target.tags?.includes('primal'))return;descendants.push(target);for(const child of target.family?.evolutions||[])visit(child,depth+1);};visit(p.speciesId,0);return descendants;}
