@@ -655,23 +655,28 @@ function drawScanPreview(bars){
  });
 }
 function getOcrCrop(img,box,mode='name'){
- const x=Math.round(box[0]*img.width),y=Math.round(box[1]*img.height),
-       w=Math.round((box[2]-box[0])*img.width),h=Math.round((box[3]-box[1])*img.height);
- const c=document.createElement('canvas');c.width=Math.max(450,w*3);c.height=Math.max(110,h*3);
- const cx=c.getContext('2d');cx.fillStyle='white';cx.fillRect(0,0,c.width,c.height);
- cx.drawImage(img,x,y,w,h,0,0,c.width,c.height);
- if(mode==='cp'){
-   const im=cx.getImageData(0,0,c.width,c.height);
-   for(let i=0;i<im.data.length;i+=4){
-     const [r,g,b]=im.data.slice(i,i+3);
-     const luminance=.2126*r+.7152*g+.0722*b;
-     // White 'CP 507' on a darker game background.
-     const v=luminance>190?0:255;
-     im.data[i]=im.data[i+1]=im.data[i+2]=v;
-   }
-   cx.putImageData(im,0,0);
+ const x=Math.round(box[0]*img.width),y=Math.round(box[1]*img.height);
+ const w=Math.max(1,Math.round((box[2]-box[0])*img.width)),h=Math.max(1,Math.round((box[3]-box[1])*img.height));
+ const scale=Math.max(1.2,Math.min(4,1100/w,180/h));
+ const pad=12,c=document.createElement('canvas');
+ c.width=Math.round(w*scale)+2*pad;c.height=Math.round(h*scale)+2*pad;
+ const cx=c.getContext('2d',{willReadFrequently:true});
+ cx.fillStyle='white';cx.fillRect(0,0,c.width,c.height);
+ cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+ cx.drawImage(img,x,y,w,h,pad,pad,c.width-2*pad,c.height-2*pad);
+ if(mode==='name')return c;
+ const im=cx.getImageData(0,0,c.width,c.height);
+ const luminance=(i)=>.2126*im.data[i]+.7152*im.data[i+1]+.0722*im.data[i+2];
+ for(let yy=pad;yy<c.height-pad;yy++)for(let xx=pad;xx<c.width-pad;xx++){
+   const i=(yy*c.width+xx)*4,L=luminance(i);
+   const sat=Math.max(im.data[i],im.data[i+1],im.data[i+2])-Math.min(im.data[i],im.data[i+1],im.data[i+2]);
+   let v=255;
+   if(mode==='cp')v=L>=192&&sat<=65?0:255;
+   else if(mode==='cp-soft')v=L>=160&&sat<=90?0:255;
+   else if(mode==='dark')v=L<125?0:255;
+   im.data[i]=im.data[i+1]=im.data[i+2]=v;
  }
- return c;
+ cx.putImageData(im,0,0);return c;
 }
 function fuzzyDistance(a,b){
  if(a===b)return 0;
@@ -707,12 +712,38 @@ function findPhotoSpecies(raw){
  return {candidate:best.p,alternates:found.slice(0,5),certain:best.score<=.25 && (!found[1]||found[1].score>best.score+.04)};
 }
 function parsePhotoCP(raw,allowUnlabeled=false){
- const s=String(raw||'').replace(/[Oo]/g,'0').replace(/[,\.\s]/g,'');
- const p=s.match(/(?:CP|C[P]?)(\d{2,5})/i);
- if(p){const n=Number(p[1]);if(n>=10&&n<=10000)return n;}
+ const t=String(raw||'').normalize('NFKC').trim().replace(/[ＯOo]/g,'0');
+ const explicit=t.match(/(?:^|[^a-z])(?:CP|C[PＦF])\s*[:：]?\s*([0-9][0-9 ,.\t]{0,12})(?![a-z])/i);
+ if(explicit){
+   const digits=explicit[1].replace(/[^0-9]/g,'');
+   if(digits.length>=2&&digits.length<=5){const n=Number(digits);if(n>=10&&n<=10000)return n;}
+ }
  if(!allowUnlabeled)return null;
- const candidates=(s.match(/\d{2,5}/g)||[]).map(Number).filter(v=>v>=10&&v<=10000);
- return candidates.length===1?candidates[0]:null;
+ if(!/^\s*[0-9][0-9 ,.\t]{0,12}\s*$/.test(t))return null;
+ const digits=t.replace(/[^0-9]/g,'');
+ const n=Number(digits);return digits.length>=2&&digits.length<=5&&n>=10&&n<=10000?n:null;
+}
+function photoCpFits(p,ivs,cp){
+ if(!p?.baseStats||!ivs||ivs.length!==3||!ivs.every(v=>Number.isInteger(v)&&v>=0&&v<=15))return null;
+ return CPM.slice(0,101).some((_,i)=>calcCP(p,ivs[0],ivs[1],ivs[2],i)===cp);
+}
+function choosePhotoCP(scans,p,ivs){
+ const votes=new Map();
+ for(const scan of scans){
+   const explicit=parsePhotoCP(scan.text);
+   const n=explicit??(scan.confidence>=55?parsePhotoCP(scan.text,true):null);
+   if(n===null)continue;
+   const v=votes.get(n)||{value:n,explicit:0,count:0,confidence:0};
+   v.count++;v.explicit+=explicit===null?0:1;v.confidence=Math.max(v.confidence,scan.confidence||0);
+   votes.set(n,v);
+ }
+ const scored=[...votes.values()].map(v=>({...v,fit:photoCpFits(p,ivs,v.value)}))
+  .filter(v=>v.fit!==false&&(v.explicit>0||v.count>=2||(v.fit===true&&v.confidence>=75)))
+  .sort((a,b)=>(Number(b.fit===true)-Number(a.fit===true))||(b.explicit-a.explicit)||(b.count-a.count)||(b.confidence-a.confidence));
+ if(!scored.length)return null;
+ const a=scored[0],b=scored[1];
+ if(b&&a.fit===b.fit&&a.explicit===b.explicit&&a.count===b.count)return null;
+ return a.value;
 }
 function loadOCRLib(){
  if(window.Tesseract)return Promise.resolve(window.Tesseract);
@@ -773,35 +804,45 @@ async function processPhoto(){
      if(m.status==='recognizing text')setScanStatus(`글자 인식 중… ${Math.round((m.progress||0)*100)}%`);
    }});
    try{
-     const nameBoxes=[[.255,.367,.69,.426],[.235,.295,.77,.375]];
-     const nameScans=[];
+     const nameScans=[],cpScans=[];
+     const nameBoxes=[[.20,.335,.80,.405],[.19,.385,.81,.465],[.18,.275,.82,.35]];
+     await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:''});
      for(const box of nameBoxes){
-       const n=await worker.recognize(getOcrCrop(scanImage,box,'name'));
+       const n=await worker.recognize(getOcrCrop(scanImage,box,'dark'));
        nameScans.push(String(n.data.text||'').trim());
      }
-     nameRaw=nameScans.join('\n');
-     const cpBoxes=[[.295,.012,.68,.069],[.27,.06,.73,.14],[.29,.12,.70,.19]];
-     const cpScans=[];
+     nameRaw=nameScans.join('\n');nameMatch=findPhotoSpecies(nameRaw);
+     if(!nameMatch.certain){
+       // A wider crop catches names shifted by display size and appraisal layout.
+       await worker.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:''});
+       const n=await worker.recognize(getOcrCrop(scanImage,[.12,.25,.88,.53],'name'));
+       nameScans.push(String(n.data.text||'').trim());
+       nameRaw=nameScans.join('\n');nameMatch=findPhotoSpecies(nameRaw);
+     }
+     // CP has different typography and should not use Korean-name segmentation.
+     await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'CPcp0123456789, .'});
+     const cpBoxes=[[.20,.005,.80,.085],[.20,.043,.80,.12],[.24,.092,.76,.165]];
      for(const box of cpBoxes){
        const c=await worker.recognize(getOcrCrop(scanImage,box,'cp'));
-       cpScans.push(String(c.data.text||'').trim());
+       cpScans.push({text:String(c.data.text||'').trim(),confidence:Number(c.data.confidence)||0});
      }
-     cpRaw=cpScans.join(' / ');
-     const exact=cpScans.map(t=>parsePhotoCP(t)).filter(v=>v!==null);
-     const plausible=cpScans.map(t=>parsePhotoCP(t,true)).filter(v=>v!==null);
-     const counts=new Map();
-     for(const value of plausible)counts.set(value,(counts.get(value)||0)+1);
-     // Without an explicit CP label, require the same number in two
-     // independent top-screen crops to prevent accidental stat/level picks.
-     const repeated=[...counts.entries()].filter(([,count])=>count>=2).map(([value])=>value);
-     cp=exact.length&&new Set(exact).size===1?exact[0]:(repeated.length===1?repeated[0]:null);
+     const p=nameMatch?.certain?nameMatch.candidate:null;
+     cp=choosePhotoCP(cpScans,p,bars.ivs);
+     if(cp===null){
+       for(const box of [[.18,.005,.82,.10],[.20,.04,.80,.145]]){
+         const c=await worker.recognize(getOcrCrop(scanImage,box,'cp-soft'));
+         cpScans.push({text:String(c.data.text||'').trim(),confidence:Number(c.data.confidence)||0});
+       }
+       cp=choosePhotoCP(cpScans,p,bars.ivs);
+     }
+     cpRaw=cpScans.map(v=>v.text).filter(Boolean).join(' / ');
    }finally{await worker.terminate();}
-   nameMatch=findPhotoSpecies(nameRaw);
+   nameMatch=nameMatch||findPhotoSpecies(nameRaw);
    if(nameMatch.candidate&&nameMatch.certain){
      selectPokemon(nameMatch.candidate.speciesId);
    }else if(nameMatch.candidate){
      // Do not auto-select a fuzzy match. The user must confirm the Pokémon.
-     $('#speciesInput').value=nameOf(nameMatch.candidate);
+     $('#speciesInput').value='';
      selectedSpecies=null;
    }
    if(cp!==null)$('#ownedCP').value=cp;updateAutoLeague();
@@ -815,7 +856,16 @@ async function processPhoto(){
    detail.insertAdjacentHTML('beforeend',`<div style="margin-top:8px">포켓몬: <b>${nameStatus}</b> · CP: <b>${cp??'직접 확인'}</b></div>`);
    if(nameRaw||cpRaw)detail.insertAdjacentHTML('beforeend',`<div class="soft">OCR 원문: ${escapeHTML(nameRaw||'—')} / ${escapeHTML(cpRaw||'—')}</div>`);
    if(!bars.reliable)detail.insertAdjacentHTML('beforeend','<div class="warn">개체값 막대를 판독하지 못해 기존 IV 입력값은 변경하지 않았습니다.</div>');
-   if(!nameMatch?.certain)detail.insertAdjacentHTML('beforeend','<div class="warn">이름 인식이 불확실합니다. 검색창에서 포켓몬을 직접 선택하세요.</div>');
+   if(!nameMatch?.certain){
+     detail.insertAdjacentHTML('beforeend','<div class="warn">이름 인식이 불확실합니다. 아래 후보 중 정확한 이름을 선택하거나 직접 검색하세요.</div>');
+     const list=document.createElement('div');list.className='row';list.style.marginTop='8px';
+     for(const match of (nameMatch?.alternates||[])){
+       const btn=document.createElement('button');btn.type='button';btn.className='btn tiny';btn.textContent=nameOf(match.p);
+       btn.onclick=()=>{selectPokemon(match.p.speciesId);if(cp!==null&&photoCpFits(match.p,bars.ivs,cp)===false){$('#ownedCP').value='';updateAutoLeague();}list.remove();};
+       list.appendChild(btn);
+     }
+     detail.appendChild(list);
+   }
    if(!scanBusy)return;
    if(bars.reliable && found && nameMatch?.certain && cp!==null)setScanStatus('자동 판독 완료 · 이름, CP, 개체값을 확인한 뒤 분석하세요.');
    else setScanStatus('일부 값이 불확실합니다. 이름·CP·IV를 확인한 뒤 분석하세요.',true);
