@@ -104,6 +104,25 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 .training-row-reason{font-size:12px;color:var(--muted);line-height:1.55;margin-top:5px;max-width:480px}
 
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.detail-grid .panel{margin:0}.detail-note{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.detail-note:last-child{border-bottom:0}.detail-threat{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line)}.detail-threat .portrait{width:52px;height:52px;object-fit:contain}.detail-threat>div{min-width:0;flex:1}.detail-threat .soft{font-size:12px}#teamDetailContent>.panel{margin:14px 0}#teamDetailContent h3{margin-top:0}@media(max-width:760px){.detail-grid{grid-template-columns:1fr}}
+
+.coverage-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.coverage-stats>div{padding:12px 6px;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.coverage-stats strong{display:block;font-size:25px;font-weight:850;line-height:1.1;font-variant-numeric:tabular-nums}
+.coverage-stats strong small{font-size:13px;color:var(--muted);font-weight:500}
+.coverage-stats span{display:block;font-size:12px;color:var(--muted);margin-top:7px}
+.coverage-good{color:var(--mint)}.coverage-one{color:var(--amber)}.coverage-none{color:var(--bad)}
+.coverage-gaps{padding:10px 12px;background:#0d1728;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.coverage-gaps>div{display:flex;flex-wrap:wrap;gap:5px}.coverage-gap{color:var(--bad);font-size:12px;background:#382533;border:1px solid #6e4350;border-radius:6px;padding:3px 8px}
+.coverage-legend{display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:12px;margin:10px 0}
+.coverage-scroll{overflow-x:auto}.coverage-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;text-align:center}
+.coverage-table th,.coverage-table td{border-bottom:1px solid var(--line);padding:7px 3px;vertical-align:middle;overflow-wrap:anywhere}
+.coverage-table thead th{background:var(--panel2);padding:8px 3px}.coverage-table th:first-child{width:19%;text-align:left;padding-left:8px}
+.coverage-table th:last-child{width:17%}.coverage-head{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px}
+.coverage-head .portrait{width:40px;height:40px;object-fit:contain}.coverage-head small{color:var(--muted);font-weight:400;font-size:11px}
+.coverage-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:6px;font-weight:850;font-size:15px}
+.coverage-cell.yes{background:#173e35;color:var(--mint)}.coverage-cell.no{color:#7787a0}.coverage-cell.unknown{color:var(--amber)}
+.coverage-count{font-weight:800;font-variant-numeric:tabular-nums}.coverage-row-none{background:#301e2b55}.coverage-row-one{background:#342d1b35}
+@media(max-width:520px){.coverage-stats{gap:5px}.coverage-stats strong{font-size:21px}.coverage-stats span{font-size:11px}.coverage-head{font-size:11px}.coverage-head .portrait{width:32px;height:32px}.coverage-table{font-size:12px}.coverage-table th,.coverage-table td{padding:6px 2px}.coverage-cell{width:23px;height:22px}}
 </style>
 </head>
 <body><div class="shell">
@@ -1241,6 +1260,36 @@ function detailRecruitment(t,league){
  }
  return out.sort((a,b)=>b.gain-a.gain||a.rank.rank-b.rank.rank).slice(0,3);
 }
+function renderOffensiveCoverage(roles){
+ const members=roles.map(({role,c})=>{
+  const ids=c.moveset||[],known=detailMoveTypes(c);
+  return {role,c,known,complete:ids.length>0&&ids.every(id=>TEAM_ATTACK_TYPES.includes(teamMovesById.get(id)?.type))};
+ });
+ const rows=TEAM_ATTACK_TYPES.map(type=>{
+  const hits=members.map(m=>detailBestHit(m.known,[type])>1.05);
+  return {type,hits,count:hits.filter(Boolean).length};
+ });
+ const covered=rows.filter(r=>r.count>0).length;
+ const redundant=rows.filter(r=>r.count>=2).length;
+ const single=rows.filter(r=>r.count===1).length;
+ const missing=rows.filter(r=>r.count===0).length;
+ const incomplete=members.some(m=>!m.complete);
+ const counts='<div class="coverage-stats">'+
+ '<div><strong>'+covered+'<small> / 18</small></strong><span>공략 가능</span></div>'+
+ '<div><strong class="coverage-good">'+redundant+'</strong><span>2마리 이상</span></div>'+
+ '<div><strong class="coverage-one">'+single+'</strong><span>1마리만</span></div>'+
+ '<div><strong class="coverage-none">'+missing+'</strong><span>미공략</span></div></div>';
+ const heads=members.map(m=>'<th scope="col"><span class="coverage-head">'+portraitImg(m.c.p)+'<b>'+detailMember(m.c)+'</b><small>'+m.role+'</small></span></th>').join('');
+ const body=rows.map(r=>{
+  const tone=r.count>=2?'good':r.count===1?'one':'none';
+  const cells=r.hits.map((hit,i)=>'<td><span class="coverage-cell '+(hit?'yes':members[i].complete?'no':'unknown')+'" aria-label="'+(hit?'효과가 굉장함':members[i].complete?'효과가 굉장한 추천 기술 없음':'기술 정보 불완전')+'">'+(hit?'✓':members[i].complete?'–':'?')+'</span></td>').join('');
+  return '<tr class="coverage-row-'+tone+'"><th scope="row">'+escapeHTML(TYPES[r.type]||r.type)+'</th>'+cells+'<td><span class="coverage-count coverage-'+tone+'">'+r.count+'명</span></td></tr>';
+ }).join('');
+ const summary='<div class="coverage-gaps"><b>미공략 타입</b><div>'+ (missing?rows.filter(r=>!r.count).map(r=>'<span class="coverage-gap">'+escapeHTML(TYPES[r.type])+'</span>').join(''):'<span class="coverage-good">없음</span>')+'</div></div>';
+ return counts+summary+'<div class="coverage-legend"><span><b class="coverage-good">✓</b> 효과가 굉장함</span><span>– 해당 기술 없음</span>'+(incomplete?'<span>? 기술 정보 불완전</span>':'')+'</div>'+
+ '<div class="coverage-scroll"><table class="coverage-table"><thead><tr><th scope="col">상대 타입</th>'+heads+'<th scope="col">공략 인원</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
+ '<p class="hint">추천 노말·스페셜 기술 기준, 단일 타입에 1.6배 이상 피해를 주는 기술을 표시합니다. 미공략은 약점 공격 기술이 확인되지 않았다는 의미이며, 실제 대전에서 이길 수 없다는 뜻은 아닙니다.'+(incomplete?' 일부 추천 기술 정보가 누락되어 공략 범위가 과소평가될 수 있습니다.':'')+'</p>';
+}
 function renderTeamDetail(){
  const el=$('#teamDetailContent');if(!el)return;
  document.querySelectorAll('#detailLeagueSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.league===detailLeague));
@@ -1265,21 +1314,7 @@ function renderTeamDetail(){
   const missing=weaknesses.filter(x=>!covered.some(v=>v.types.includes(x)));
   return '<div class="detail-note"><b>'+role+' · '+detailMember(c)+'</b><div>'+(covered.length?covered.map(v=>detailMember(v.z)+' → '+escapeHTML(detailNames(v.types))).join(' / '):'저항으로 직접 보완할 팀원 없음')+'</div><div class="soft">'+(missing.length?'저항으로 보완되지 않는 약점: '+escapeHTML(detailNames(missing)):'모든 타입 약점에 저항하는 팀원이 있음')+'</div></div>';
  }).join('');
- const attackRows=types.map(type=>{
-  const hitters=roles.filter(({c})=>detailBestHit(detailMoveTypes(c),[type])>1.05);
-  return {type,hitters};
- });
- const coveredAttack=attackRows.filter(r=>r.hitters.length);
- const missingAttack=attackRows.filter(r=>!r.hitters.length);
- const singleAttack=attackRows.filter(r=>r.hitters.length===1);
- const attackNotes=roles.map(({c})=>{
-  const moves=detailMoveTypes(c);
-  const targets=coveredAttack.filter(r=>r.hitters.some(h=>h.c===c)).map(r=>r.type);
-  const exclusive=singleAttack.filter(r=>r.hitters[0].c===c).map(r=>r.type);
-  return '<div class="detail-note"><b>'+detailMember(c)+'</b><div>'+escapeHTML(moves.length?'공략 가능: '+(detailNames(targets)||'없음'):'추천 기술 타입 정보 없음')+'</div>'+(exclusive.length?'<div class="soft">이 포켓몬만 공략 가능: '+escapeHTML(detailNames(exclusive))+'</div>':'')+'</div>';
- }).join('');
- const attackSummary='<div class="info"><b>효과적으로 공격 가능한 단일 타입 '+coveredAttack.length+' / '+types.length+'개</b><div style="height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin:9px 0"><div style="height:100%;width:'+(100*coveredAttack.length/types.length)+'%;background:#6bc9ae"></div></div><div class="soft">'+(missingAttack.length?'효과가 굉장한 기술이 확인되지 않은 타입: '+escapeHTML(detailNames(missingAttack)):'18개 단일 타입 모두 공략 가능')+'</div></div>';
- const attackPanel=attackSummary+attackNotes+'<p class="hint">추천 노말·스페셜 기술의 타입을 기준으로 계산합니다. 이중 타입, 실제 기술 보유 여부, 위력·에너지·실드는 별도 고려해야 하며 누락된 기술 정보가 있으면 공략 범위가 과소평가될 수 있습니다.</p>';
+ const attackPanel=renderOffensiveCoverage(roles);
  const threats=detailMatchups(t,detailLeague);
  const danger=threats.map(o=>{
   const bad=o.matches.filter(m=>m.risk).map(m=>detailMember(m.c));
@@ -1289,7 +1324,7 @@ function renderTeamDetail(){
  const recruits=detailRecruitment(t,detailLeague);
  const upgrades=recruits.map(x=>'<div class="detail-threat">'+portraitImg(x.p)+'<div><b>'+detailMember({p:x.p})+'</b> <span class="soft">리그 '+fmt(x.rank.rank)+'위</span><div>'+detailMember(x.replaced)+' 대신 고려 · <b class="team-good">+'+x.gain.toFixed(1)+'점</b></div><div class="soft">'+(x.fixed.length?'완화 가능한 공통 약점: '+escapeHTML(detailNames(x.fixed)):'종합 성능 또는 공격 범위 개선')+'</div></div></div>').join('');
  el.innerHTML='<div class="panel"><div class="row spread"><div><h3 style="margin:0">'+LEAGUES[detailLeague].label+' 선택 조합</h3><div class="sub">조합 유형: '+style+'</div></div><div class="team-score">'+t.score.toFixed(1)+'점</div></div><div class="team-roster" style="margin-top:15px">'+roster+'</div><div class="info" style="margin-top:12px"><b>상성 보완 핵심: '+detailMember(core.c)+'</b><div class="sub">다른 팀원의 약점을 저항으로 받아낼 수 있는 타입 수를 우선 평가했습니다.</div><div style="margin-top:8px">'+(gaps.length?'저항 없이 노출된 약점: '+escapeHTML(detailNames(gaps)):'모든 노출 약점에 저항하는 팀원이 있습니다.')+'</div></div></div>'+
- '<div class="detail-grid"><div class="panel"><h3>상성 보완 관계</h3>'+covers+'</div><div class="panel"><h3>공격 상성 분석</h3>'+attackPanel+'</div></div>'+
+ '<div class="panel"><h3>상성 보완 관계</h3>'+covers+'</div><div class="panel"><h3>공격 상성 분석</h3><div class="sub" style="margin-bottom:12px">어떤 상대 타입을 어느 팀원이 효과적으로 공격할 수 있는지 비교합니다.</div>'+attackPanel+'</div>'+
  '<div class="panel"><h3>주의할 상대 포켓몬 TOP 5</h3><p class="sub">리그 종합 상위 50마리의 추천 기술과 양방향 타입 상성 비교입니다. 실제 승패나 출현 빈도는 반영하지 않습니다.</p>'+(danger||'<div class="empty">현재 기준에서 뚜렷하게 불리한 상대가 확인되지 않았습니다. 기술 정보가 부족한 상대는 제외됩니다.</div>')+'</div>'+
  '<div class="panel"><h3>영입 추천 TOP 3</h3><p class="sub">리그 상위 50마리 중 보관함 및 진화 가능 종에 없는 후보를 한 자리씩 교체해 비교했습니다. IV 효율 96점 가정의 예상 점수이며 실제 육성 가능성과 사탕·별의모래 비용은 별도 확인하세요.</p>'+(upgrades||'<div class="empty">이 기준에서 더 높은 점수를 만드는 미보유 후보가 확인되지 않았습니다.</div>')+'</div>'+
  '<div class="panel">'+teamTypeMatrix(t)+'</div>';
