@@ -120,7 +120,7 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 .coverage-table th:last-child{width:17%}.coverage-head{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px}
 .coverage-head .portrait{width:40px;height:40px;object-fit:contain}.coverage-head small{color:var(--muted);font-weight:400;font-size:11px}
 .coverage-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:6px;font-weight:850;font-size:15px}
-.coverage-cell.yes{background:#173e35;color:var(--mint)}.coverage-cell.no{color:#7787a0}.coverage-cell.unknown{color:var(--amber)}
+.coverage-cell.yes{background:#173e35;color:var(--mint)}.coverage-cell.no{color:#7787a0}.coverage-cell.unknown{color:var(--amber)}.coverage-cell.resist{background:#422633;color:#ff9aab}.coverage-cell.resist2{background:#422633;color:#ff9aab}.coverage-cell.resist,.coverage-cell.resist2{width:auto;min-width:28px;padding:0 4px;font-size:11px}.coverage-move-name.resisted{color:#ff9aab}.coverage-hit-group+.coverage-hit-group{margin-top:6px}
 .coverage-count{font-weight:800;font-variant-numeric:tabular-nums}.coverage-row-none{background:#301e2b55}.coverage-row-one{background:#342d1b35}
 @media(max-width:520px){.coverage-stats{gap:5px}.coverage-stats strong{font-size:21px}.coverage-stats span{font-size:11px}.coverage-head{font-size:11px}.coverage-head .portrait{width:32px;height:32px}.coverage-table{font-size:12px}.coverage-table th,.coverage-table td{padding:6px 2px}.coverage-cell{width:23px;height:22px}}
  .move-entry-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:10px}.move-entry-grid>[hidden]{display:none!important}.move-entry-grid select{width:100%}.coverage-move-name{font-size:10px;line-height:1.25;margin-top:3px;color:var(--mint);overflow-wrap:anywhere}@media(max-width:640px){.move-entry-grid{grid-template-columns:1fr}.coverage-move-name{font-size:9px}}
@@ -1493,13 +1493,28 @@ function renderOffensiveCoverage(roles,actual=false){
  const heads=members.map(m=>'<th scope="col"><span class="coverage-head">'+portraitImg(m.c.p)+'<b>'+detailMember(m.c)+'</b><small>'+m.role+'</small></span></th>').join('');
  const body=rows.map(r=>{
   const tone=r.count>=2?'good':r.count===1?'one':'none';
-  const cells=r.hits.map((hit,i)=>'<td><span class="coverage-cell '+(hit?'yes':members[i].complete?'no':'unknown')+'" aria-label="'+(hit?'효과가 굉장함':members[i].complete?'효과가 굉장한 기술 없음':'기술 정보 불완전')+'">'+(hit?'✓':members[i].complete?'–':'?')+'</span>'+ (hit?'<div class="coverage-move-name">'+members[i].c.moveset.filter(id=>{const m=teamMovesById.get(id);return m&&Number(m.power)>0&&teamEffectiveness(m.type,[r.type])>1.05;}).map(id=>escapeHTML(localMoveName(id)==='한국어 명칭 미확인'?(teamMovesById.get(id)?.name||id):localMoveName(id))).join(' · ')+'</div>':'')+'</td>').join('');
+   const cells=members.map(m=>{
+    const groups={super:[],resist:[],resist2:[]};
+    for(const id of m.c.moveset||[]){
+     const move=teamMovesById.get(id);
+     if(!move||!(Number(move.power)>0)||!TEAM_ATTACK_TYPES.includes(move.type))continue;
+     const effect=teamEffectiveness(move.type,[r.type]);
+     const key=effect>1.05?'super':effect<.5?'resist2':effect<.96?'resist':null;
+     if(key){
+      const name=localMoveName(id);
+      groups[key].push(escapeHTML(name==='한국어 명칭 미확인'?(move.name||id):name));
+     }
+    }
+    const block=(key,tone,mark,label)=>groups[key].length?'<div class="coverage-hit-group"><span class="coverage-cell '+tone+'" aria-label="'+label+'" title="'+label+'">'+mark+'</span><div class="coverage-move-name'+(key==='super'?'':' resisted')+'">'+groups[key].join(' · ')+'</div></div>':'';
+    const blocks=block('super','yes','✓','효과가 굉장함 (1.6배)')+block('resist','resist','0.625×','효과가 별로임 (0.625배)')+block('resist2','resist2','0.391×','강한 반감 (0.390625배)');
+    return '<td>'+(blocks||'<span class="coverage-cell '+(m.complete?'no':'unknown')+'" aria-label="'+(m.complete?'굉장하거나 반감되는 기술 없음':'기술 정보 불완전')+'">'+(m.complete?'–':'?')+'</span>')+(blocks&&!m.complete?'<div class="coverage-hit-group"><span class="coverage-cell unknown" title="기술 정보 불완전">?</span></div>':'')+'</td>';
+   }).join('');
   return '<tr class="coverage-row-'+tone+'"><th scope="row">'+escapeHTML(TYPES[r.type]||r.type)+'</th>'+cells+'<td><span class="coverage-count coverage-'+tone+'">'+r.count+'명</span></td></tr>';
  }).join('');
  const summary='<div class="coverage-gaps"><b>미공략 타입</b><div>'+ (missing?rows.filter(r=>!r.count).map(r=>'<span class="coverage-gap">'+escapeHTML(TYPES[r.type])+'</span>').join(''):'<span class="coverage-good">없음</span>')+'</div></div>';
- return counts+summary+'<div class="coverage-legend"><span><b class="coverage-good">✓</b> 효과가 굉장함</span><span>– 해당 기술 없음</span>'+(incomplete?'<span>? 기술 정보 불완전</span>':'')+'</div>'+
+ return counts+summary+'<div class="coverage-legend"><span><b class="coverage-good">✓</b> 효과가 굉장함 (1.6배)</span><span><b style="color:#ff9aab">0.625×</b> 반감</span><span><b style="color:#ff9aab">0.391×</b> 강한 반감</span><span>– 해당 상성 기술 없음</span>'+(incomplete?'<span>? 기술 정보 불완전</span>':'')+'</div>'+
  '<div class="coverage-scroll"><table class="coverage-table"><thead><tr><th scope="col">상대 타입</th>'+heads+'<th scope="col">공략 인원</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
- '<p class="hint">'+(actual?'실제 등록 기술 기준입니다. 진화형의 기술은 미확정으로 표시합니다.':'PvPoke 최적 기술 기준입니다. 미해방 여부와 현재 보유 기술에 관계없이 평가합니다.')+' 단일 타입에 1.6배 이상 피해를 주는 기술명도 함께 표시합니다. 미공략은 약점 공격 기술이 확인되지 않았다는 의미이며, 실제 대전에서 이길 수 없다는 뜻은 아닙니다.'+(incomplete?' 일부 추천 기술 정보가 누락되어 공략 범위가 과소평가될 수 있습니다.':'')+'</p>';
+ '<p class="hint">'+(actual?'실제 등록 기술 기준입니다. 진화형의 기술은 미확정으로 표시합니다.':'PvPoke 최적 기술 기준입니다. 미해방 여부와 현재 보유 기술에 관계없이 평가합니다.')+' 단일 타입에 효과가 굉장한 기술과 반감되는 기술을 각각 표시합니다. 강한 반감은 본가에서 무효인 상성의 포켓몬 GO 피해 배율입니다. 공략 인원은 효과가 굉장한 기술을 가진 팀원만 계산합니다. 미공략은 약점 공격 기술이 확인되지 않았다는 의미이며, 실제 대전에서 이길 수 없다는 뜻은 아닙니다.'+(incomplete?' 일부 추천 기술 정보가 누락되어 공략 범위가 과소평가될 수 있습니다.':'')+'</p>';
 }
 function renderTeamDetail(){
  const el=$('#teamDetailContent');if(!el)return;
