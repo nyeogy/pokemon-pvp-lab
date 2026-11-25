@@ -140,7 +140,7 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 <section class="hero"><div><div class="eyebrow">YOUR PVP RESEARCH DESK</div><h2>순위부터 개체값까지, 한 번에.</h2><p>리그별 랭킹 · IV 4,096개 순위표 · 사진 자동 판독 · 최적 팀 TOP 5 · 타입 약점 분석 · 육성 우선순위 · 개인 보관함</p></div><div class="metric-row"><div class="metric"><b id="greatCount">—</b><small>슈퍼리그 평가 포켓몬</small></div><div class="metric"><b id="ultraCount">—</b><small>하이퍼리그 평가 포켓몬</small></div><div class="metric"><b id="ownedCount">0</b><small>내가 등록한 포켓몬</small></div></div></section>
 <nav class="tabs"><button class="tab active" data-tab="rankings">🏆 전체 랭킹</button><button class="tab" data-tab="ivdex">📊 개체값 순위표</button><button class="tab" data-tab="analyzer">🧬 개체값 분석</button><button class="tab" data-tab="collection">📦 내 포켓몬</button><button class="tab" data-tab="teams">⚔️ 최적 팀 TOP 5</button><button class="tab" data-tab="teamdetail">🔍 조합 상세 분석</button><button class="tab" data-tab="leaderboard">🏅 조합 랭킹</button><button class="tab" data-tab="account">👤 계정·동기화</button><button class="tab" data-tab="guide">⚙️ 데이터·안내</button></nav>
 <div id="loadMessage" class="loader"><div class="spinner"></div>배틀도감 데이터 연결 준비 중…<div class="hint">로딩 방식 개선 버전 · 2026-11-23</div></div>
-<section class="view active" id="view-rankings"><div class="section-head"><div><h3>리그별 전체 랭킹</h3><div class="sub" id="rankingSubtitle">공개된 PvPoke 종합 랭킹 · 포켓몬을 누르면 개체값 순위표를 볼 수 있습니다.</div></div><div class="league-switch" id="leagueButtons"><button data-league="great" class="active">슈퍼 · 1,500</button><button data-league="ultra">하이퍼 · 2,500</button><button data-league="master">마스터 · 무제한</button></div></div><div class="row spread mb18"><div class="rank-search-controls"><input class="search" id="rankSearch" placeholder="이름 검색 · 한글/영문/도감번호"><label class="checkrow rank-evolution-check" for="rankIncludeEvolutions"><input id="rankIncludeEvolutions" type="checkbox">진화체 포함</label></div><span class="sub" id="rankFilterInfo">—</span></div><div id="rankList" class="rank-list"></div><div style="text-align:center;margin:19px 0"><button class="btn" id="moreBtn" style="display:none">더 보기 +60</button></div></section>
+<section class="view active" id="view-rankings"><div class="section-head"><div><h3>리그별 전체 랭킹</h3><div class="sub" id="rankingSubtitle">공개된 PvPoke 종합 랭킹 · 포켓몬을 누르면 개체값 순위표를 볼 수 있습니다.</div></div><div class="league-switch" id="leagueButtons"><button data-league="great" class="active">슈퍼 · 1,500</button><button data-league="ultra">하이퍼 · 2,500</button><button data-league="master">마스터 · 무제한</button></div></div><div class="row spread mb18"><div class="rank-search-controls"><input class="search" id="rankSearch" placeholder="이름 검색 · 한글/영문/도감번호"><label class="checkrow rank-evolution-check" for="rankIncludeEvolutions"><input id="rankIncludeEvolutions" type="checkbox">진화 계열 포함</label></div><span class="sub" id="rankFilterInfo">—</span></div><div id="rankList" class="rank-list"></div><div style="text-align:center;margin:19px 0"><button class="btn" id="moreBtn" style="display:none">더 보기 +60</button></div></section>
 <section class="view" id="view-ivdex">
   <div class="section-head"><div><h3>개체값 전체 순위표</h3><div class="sub">포켓몬과 리그를 선택해 0~15 개체값 4,096개를 순위별로 검색하세요.</div></div><button class="btn ghost" id="backRank">← 전체 랭킹</button></div>
   <div class="panel" id="ivdexCard">
@@ -404,7 +404,28 @@ async function fetchData(force=false){
 }
 function showTab(key){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+key));if(key==='collection')renderOwned();if(key==='teams')renderTeamBuilder();if(key==='teamdetail')renderTeamDetail();if(key==='account')cloudRenderUI();if(key==='leaderboard')boardRefresh();window.scrollTo({top:0,behavior:'smooth'});}
 function rankSearchMatches(q,p,r=p){return (`${r?.speciesName||''} ${r?.speciesId||''} ${p?.dex||''} ${p?nameOf(p):''}`).toLowerCase().includes(q);}
-function renderRankings(){if(!dataReady)return;const q=$('#rankSearch').value.trim().toLowerCase();const includeEvolutions=$('#rankIncludeEvolutions').checked;const expanded=new Set();if(q&&includeEvolutions){for(const p of pokemon){if(rankSearchMatches(q,p)){for(const descendant of familyOf(p))expanded.add(descendant.speciesId);}}}const list=ranks[activeLeague].filter(r=>!q||rankSearchMatches(q,pokemonById.get(r.speciesId),r)||expanded.has(r.speciesId));const total=ranks[activeLeague].length;$('#rankingSubtitle').textContent=`${LEAGUES[activeLeague].label} · 전체 ${fmt(total)}마리의 종합 성능 순위 (PvPoke)`;$('#rankFilterInfo').textContent=`${fmt(list.length)}마리 표시 · 기술의 *는 특별 기술`;let html=list.slice(0,visibleRows).map(r=>{const p=pokemonById.get(r.speciesId);return `<div class="rank-item" data-id="${escapeHTML(r.speciesId)}"><div class="pos">#${fmt(r.rank)}</div>${portraitImg(p)}<div><div class="pk-name">${escapeHTML(p?nameOf(p):r.speciesName)}</div><div class="pk-en">${escapeHTML(r.speciesName)} · ${p?.types?.map(t=>TYPES[t]||t).join(' / ')||''}</div></div><div class="moves">${movesOf(r,p)}</div><div class="score">${r.score??'—'}<small>PvPoke 점수</small></div><button class="btn tiny detail-arrow" data-action="inspect" data-id="${escapeHTML(r.speciesId)}" aria-label="개체값 순위표 보기">IV 순위</button></div>`;}).join('');$('#rankList').innerHTML=html||'<div class="empty">검색 결과가 없습니다.</div>';$('#moreBtn').style.display=list.length>visibleRows?'inline-block':'none';}
+// Search-only undirected evolution graph: include ancestors, descendants and sibling branches.
+function rankEvolutionFamilyMatches(q){
+ const links=new Map();
+ const eligible=p=>p&&!p.tags?.includes('mega')&&!p.tags?.includes('primal');
+ const connect=(a,b)=>{if(!links.has(a))links.set(a,new Set());links.get(a).add(b);};
+ for(const p of pokemon){
+  if(!eligible(p))continue;
+  for(const child of p.family?.evolutions||[]){
+   if(!eligible(pokemonById.get(child)))continue;
+   connect(p.speciesId,child);connect(child,p.speciesId);
+  }
+ }
+ const found=new Set(),queue=[];
+ for(const p of pokemon){if(rankSearchMatches(q,p)){found.add(p.speciesId);queue.push(p.speciesId);}}
+ for(let i=0;i<queue.length;i++){
+  for(const id of links.get(queue[i])||[]){
+   if(!found.has(id)){found.add(id);queue.push(id);}
+  }
+ }
+ return found;
+}
+function renderRankings(){if(!dataReady)return;const q=$('#rankSearch').value.trim().toLowerCase();const includeEvolutions=$('#rankIncludeEvolutions').checked;const expanded=q&&includeEvolutions?rankEvolutionFamilyMatches(q):new Set();const list=ranks[activeLeague].filter(r=>!q||rankSearchMatches(q,pokemonById.get(r.speciesId),r)||expanded.has(r.speciesId));const total=ranks[activeLeague].length;$('#rankingSubtitle').textContent=`${LEAGUES[activeLeague].label} · 전체 ${fmt(total)}마리의 종합 성능 순위 (PvPoke)`;$('#rankFilterInfo').textContent=`${fmt(list.length)}마리 표시 · 기술의 *는 특별 기술`;let html=list.slice(0,visibleRows).map(r=>{const p=pokemonById.get(r.speciesId);return `<div class="rank-item" data-id="${escapeHTML(r.speciesId)}"><div class="pos">#${fmt(r.rank)}</div>${portraitImg(p)}<div><div class="pk-name">${escapeHTML(p?nameOf(p):r.speciesName)}</div><div class="pk-en">${escapeHTML(r.speciesName)} · ${p?.types?.map(t=>TYPES[t]||t).join(' / ')||''}</div></div><div class="moves">${movesOf(r,p)}</div><div class="score">${r.score??'—'}<small>PvPoke 점수</small></div><button class="btn tiny detail-arrow" data-action="inspect" data-id="${escapeHTML(r.speciesId)}" aria-label="개체값 순위표 보기">IV 순위</button></div>`;}).join('');$('#rankList').innerHTML=html||'<div class="empty">검색 결과가 없습니다.</div>';$('#moreBtn').style.display=list.length>visibleRows?'inline-block':'none';}
 
 /* Current owned moves: missing slots are unknown, never assumed to be PvPoke moves. */
 function movePool(p,kind){
