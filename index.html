@@ -494,7 +494,7 @@ function ownedMoveArray(m){return [m.fast,m.charged,...(m.unlocked?[m.second]:[]
 function ownedMoveText(p,raw){
  const m=sanitizeOwnedMoves(p,raw);
  const display=id=>id?escapeHTML(localMoveName(id)==='한국어 명칭 미확인'?(teamMovesById.get(id)?.name||id):localMoveName(id)):'미등록';
- return display(m.fast)+' · '+display(m.charged)+(m.unlocked?' · '+display(m.second):' (미해방)');
+ return display(m.fast)+' · '+display(m.charged)+(m.unlocked?' · '+display(m.second):'');
 }
 function teamMoveConfig(o,p,rank){
  const original=pokemonById.get(o.speciesId);
@@ -585,7 +585,7 @@ function teamMoveDisplay(c){
  const optimal=movesOf({moveset:c.optimalMoveset||c.moveset||[]},c.p)||'추천 기술 정보 없음';
  const actual=(c.actualMoveset||[]).map(id=>id?movesOf({moveset:[id]},c.p):'<span class="soft">미등록</span>').join(' · ');
  return '<span class="soft">최적 기술'+(c.mode==='current'?'':' (평가 기준)')+'</span><br>'+optimal+
- '<br><span class="soft">'+(c.moveSource==='evolution'?'보유 기술: 진화 후 미확정':'보유 기술: '+(actual||'미등록')+(c.unlocked?'':' (미해방)'))+'</span>'+(c.mode==='current'?'<br><span class="soft">기술 적합도 '+(c.moveFit?.ratio==null?'산정 불가':(c.moveFit.ratio*100).toFixed(1)+'%')+(c.moveFit?.provisional?' · 잠정 평가':'')+'</span>':'');
+ '<br><span class="soft">보유 기술</span><br>'+(c.moveSource==='evolution'?'진화 후 미확정':(actual||'미등록'))+(c.mode==='current'?'<br><span class="soft">기술 적합도 '+(c.moveFit?.ratio==null?'산정 불가':(c.moveFit.ratio*100).toFixed(1)+'%')+(c.moveFit?.provisional?' · 잠정 평가':'')+'</span>':'');
 }
 
 function selectPokemon(id){if(!dataReady)return;const p=pokemonById.get(id);if(!p)return;editingOwnedId=null;selectedSpecies=p;$('#speciesInput').value=nameOf(p);$('#speciesSuggestions').classList.remove('show');renderOwnedMoveForm(p);markAnalysisDirty();}
@@ -736,7 +736,7 @@ function renderOwned(){
    const p=pokemonById.get(o.speciesId),best=bestFamilyQuick(o.speciesId),hasIV=validIVs(o);
    const stats=hasIV?`공격 ${o.a} · 방어 ${o.d} · HP ${o.h} · ${Math.round((o.a+o.d+o.h)/45*100)}%`:'개체값 미확인';
    const estimate=hasIV&&o.ivStatus==='estimated'?'<span class="chip warning">과거 사진 판독 추정치 · 재확인 필요</span>':!hasIV?'<span class="chip warning">개체값 입력 필요</span>':'';
-   return `<div class="owned-card"><div>${portraitImg(p)}</div><div><div class="pk-name">${escapeHTML(o.nick||nameOf(p)||o.speciesId)} <span class="soft">${o.nick?'· '+escapeHTML(nameOf(p)):''}</span></div><div class="tagline">${stats}${o.cp?' · CP '+fmt(o.cp):''}${LEAGUES[autoLeagueForCP(o.cp)]?' · 자동 '+LEAGUES[autoLeagueForCP(o.cp)].label:' · 보관만'}${o.note?' · '+escapeHTML(o.note):''}</div><div class="soft" style="margin-top:5px">${ownedMoveText(p,o.moves)}</div><div class="owned-badges">${estimate}${best?`<span class="chip">${escapeHTML(nameOf(best.species))} · ${LEAGUES[best.key].label} ${fmt(best.total)}마리 중 ${fmt(best.rank)}위</span>`:'<span class="chip muted">랭킹 미등재</span>'}</div></div><div class="buttons"><button class="btn tiny" data-owned="${escapeHTML(o.id)}" data-own-action="analyze">${hasIV?'분석·수정':'IV 입력'}</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="ivdex"${p?'':' disabled'}>개체값 순위표</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="remove">삭제</button></div></div>`;
+   return `<div class="owned-card"><div>${portraitImg(p)}</div><div><div class="pk-name">${escapeHTML(o.nick||nameOf(p)||o.speciesId)} <span class="soft">${o.nick?'· '+escapeHTML(nameOf(p)):''}</span></div><div class="tagline">${stats}${o.cp?' · CP '+fmt(o.cp):''}${LEAGUES[autoLeagueForCP(o.cp)]?' · 자동 '+LEAGUES[autoLeagueForCP(o.cp)].label:' · 보관만'}${o.note?' · '+escapeHTML(o.note):''}</div><div class="team-moves" style="margin-top:5px"><span class="soft">보유 기술</span><br>${ownedMoveText(p,o.moves)}</div><div class="owned-badges">${estimate}${best?`<span class="chip">${escapeHTML(nameOf(best.species))} · ${LEAGUES[best.key].label} ${fmt(best.total)}마리 중 ${fmt(best.rank)}위</span>`:'<span class="chip muted">랭킹 미등재</span>'}</div></div><div class="buttons"><button class="btn tiny" data-owned="${escapeHTML(o.id)}" data-own-action="analyze">${hasIV?'분석·수정':'IV 입력'}</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="ivdex"${p?'':' disabled'}>개체값 순위표</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="remove">삭제</button></div></div>`;
  }).join('');
 }
 function goIVDexOwned(id){
