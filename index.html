@@ -21,7 +21,7 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 
 /* Detailed per-Pokémon IV ranking browser */
 .ivdex-filters{display:grid;grid-template-columns:repeat(5,minmax(105px,1fr)) auto auto;gap:9px;align-items:end;margin:16px 0}.ivdex-filters .field input,.ivdex-filters .field select{width:100%;min-width:0}.ivdex-filters .btn{white-space:nowrap;padding:12px 14px}
-.ivdex-table-wrap{overflow-x:auto;max-height:690px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;margin:12px 0}.ivdex-table{border-collapse:collapse;width:100%;min-width:650px;font-size:13px;font-variant-numeric:tabular-nums}.ivdex-table th{text-align:right;background:#202f48;color:#b3c7df;font-size:12px;padding:13px 10px;position:sticky;top:0;z-index:1}.ivdex-table th:first-child,.ivdex-table td:first-child{text-align:left}.ivdex-table td{text-align:right;padding:12px 10px;border-top:1px solid #28374b}.ivdex-table tr:hover td{background:#253449}.ivdex-table .featured td{background:#153b39}.ivdex-table .ivrank{color:var(--mint);font-weight:850}.ivdex-table .ivvalue{font-weight:800;letter-spacing:.02em}.ivdex-name{font-weight:850;font-size:20px}.ivdex-meta{font-size:12px;color:var(--muted)}.ivdex-summary-head{display:flex;gap:13px;flex-wrap:wrap;align-items:center}.ivdex-summary-head strong{color:var(--mint)}
+.ivdex-table-wrap{overflow-x:auto;max-height:690px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;margin:12px 0}.ivdex-table{border-collapse:collapse;width:100%;min-width:650px;font-size:13px;font-variant-numeric:tabular-nums}.ivdex-table th{text-align:right;background:#202f48;color:#b3c7df;font-size:12px;padding:13px 10px;position:sticky;top:0;z-index:1}.ivdex-table th:first-child,.ivdex-table td:first-child{text-align:left}.ivdex-table td{text-align:right;padding:12px 10px;border-top:1px solid #28374b}.ivdex-table tr:hover td{background:#253449}.ivdex-table .featured td{background:#153b39}.ivdex-table .owned-iv td{background:#214b43;border-top-color:#67d6b0;border-bottom:1px solid #67d6b0}.ivdex-owned-label{display:block;font-size:10px;color:var(--mint);font-weight:700;white-space:nowrap}.ivdex-owned-summary{margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}.ivdex-table .ivrank{color:var(--mint);font-weight:850}.ivdex-table .ivvalue{font-weight:800;letter-spacing:.02em}.ivdex-name{font-weight:850;font-size:20px}.ivdex-meta{font-size:12px;color:var(--muted)}.ivdex-summary-head{display:flex;gap:13px;flex-wrap:wrap;align-items:center}.ivdex-summary-head strong{color:var(--mint)}
 @media(max-width:1100px){.ivdex-filters{grid-template-columns:repeat(3,minmax(100px,1fr))}.ivdex-filters .btn{width:100%}}
 @media(max-width:570px){.ivdex-filters{grid-template-columns:repeat(2,minmax(110px,1fr))}.ivdex-table th,.ivdex-table td{padding:10px 8px}.ivdex-name{font-size:17px}}
 /* Photo appraisal reader: no images are uploaded or stored. */
@@ -280,7 +280,7 @@ const TYPES={normal:'노말',fire:'불꽃',water:'물',grass:'풀',electric:'전
 const FORM_SUFFIX={shadow:'그림자',alolan:'알로라',galarian:'가라르',hisuian:'히스이',paldean:'팔데아',origin:'오리진',altered:'어나더',therian:'영물',incarnate:'화신',attack:'어택',defense:'디펜스',speed:'스피드',sunny:'쾌청',rainy:'빗방울',snowy:'설운',white:'화이트',black:'블랙',galar:'가라르',male:'수컷',female:'암컷',midnight:'한밤중',midday:'한낮',dusk:'황혼',crowned_sword:'검왕',crowned_shield:'방패왕'};
 // Keep the collection empty until the user explicitly saves a Pokémon.
 const KEY='pvp-lab-owned-v1';const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];const fmt=n=>Number(n||0).toLocaleString('ko-KR');
-let pokemon=[],pokemonById=new Map(),ko=[],ranks={great:[],ultra:[],master:[]},rankIndexes={},activeLeague='great',visibleRows=60,selectedSpecies=null,lastAnalysis=null,owned=[],editingOwnedId=null,dataReady=false,ivCache=new Map(),ivdexSpeciesId=null,ivdexLeague='great',ivdexPage=0,ivdexMatches=[];
+let pokemon=[],pokemonById=new Map(),ko=[],ranks={great:[],ultra:[],master:[]},rankIndexes={},activeLeague='great',visibleRows=60,selectedSpecies=null,lastAnalysis=null,owned=[],editingOwnedId=null,dataReady=false,ivCache=new Map(),ivdexSpeciesId=null,ivdexLeague='great',ivdexPage=0,ivdexMatches=[],ivdexOwned=null;
 function escapeHTML(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function validIVs(o){return ['a','d','h'].every(k=>Number.isInteger(o[k])&&o[k]>=0&&o[k]<=15);}
 function loadOwned(){
@@ -631,8 +631,13 @@ function renderOwned(){
    const p=pokemonById.get(o.speciesId),best=bestFamilyQuick(o.speciesId),hasIV=validIVs(o);
    const stats=hasIV?`공격 ${o.a} · 방어 ${o.d} · HP ${o.h} · ${Math.round((o.a+o.d+o.h)/45*100)}%`:'개체값 미확인';
    const estimate=hasIV&&o.ivStatus==='estimated'?'<span class="chip warning">과거 사진 판독 추정치 · 재확인 필요</span>':!hasIV?'<span class="chip warning">개체값 입력 필요</span>':'';
-   return `<div class="owned-card"><div>${portraitImg(p)}</div><div><div class="pk-name">${escapeHTML(o.nick||nameOf(p)||o.speciesId)} <span class="soft">${o.nick?'· '+escapeHTML(nameOf(p)):''}</span></div><div class="tagline">${stats}${o.cp?' · CP '+fmt(o.cp):''}${LEAGUES[autoLeagueForCP(o.cp)]?' · 자동 '+LEAGUES[autoLeagueForCP(o.cp)].label:' · 보관만'}${o.note?' · '+escapeHTML(o.note):''}</div><div class="soft" style="margin-top:5px">${ownedMoveText(p,o.moves)}</div><div class="owned-badges">${estimate}${best?`<span class="chip">${escapeHTML(nameOf(best.species))} · ${LEAGUES[best.key].label} ${fmt(best.total)}마리 중 ${fmt(best.rank)}위</span>`:'<span class="chip muted">랭킹 미등재</span>'}</div></div><div class="buttons"><button class="btn tiny" data-owned="${escapeHTML(o.id)}" data-own-action="analyze">${hasIV?'분석·수정':'IV 입력'}</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="remove">삭제</button></div></div>`;
+   return `<div class="owned-card"><div>${portraitImg(p)}</div><div><div class="pk-name">${escapeHTML(o.nick||nameOf(p)||o.speciesId)} <span class="soft">${o.nick?'· '+escapeHTML(nameOf(p)):''}</span></div><div class="tagline">${stats}${o.cp?' · CP '+fmt(o.cp):''}${LEAGUES[autoLeagueForCP(o.cp)]?' · 자동 '+LEAGUES[autoLeagueForCP(o.cp)].label:' · 보관만'}${o.note?' · '+escapeHTML(o.note):''}</div><div class="soft" style="margin-top:5px">${ownedMoveText(p,o.moves)}</div><div class="owned-badges">${estimate}${best?`<span class="chip">${escapeHTML(nameOf(best.species))} · ${LEAGUES[best.key].label} ${fmt(best.total)}마리 중 ${fmt(best.rank)}위</span>`:'<span class="chip muted">랭킹 미등재</span>'}</div></div><div class="buttons"><button class="btn tiny" data-owned="${escapeHTML(o.id)}" data-own-action="analyze">${hasIV?'분석·수정':'IV 입력'}</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="ivdex"${p?'':' disabled'}>개체값 순위표</button><button class="btn tiny ghost" data-owned="${escapeHTML(o.id)}" data-own-action="remove">삭제</button></div></div>`;
  }).join('');
+}
+function goIVDexOwned(id){
+ const o=owned.find(o=>o.id===id);if(!o)return;
+ const league=autoLeagueForCP(o.cp);
+ openIVDex(o.speciesId,LEAGUES[league]?league:activeLeague,o);
 }
 function goAnalyzeOwned(id){
  const o=owned.find(o=>o.id===id);if(!o)return;
@@ -661,15 +666,17 @@ async function importOwned(file){try{
 
 
 const IVDEX_PAGE_SIZE=50;
-function openIVDex(speciesId,league=activeLeague){
+function openIVDex(speciesId,league=activeLeague,ownedRecord=null){
  if(!dataReady)return;
  const p=pokemonById.get(speciesId);
  if(!p)return;
  ivdexSpeciesId=speciesId;
+ ivdexOwned=ownedRecord&&validIVs(ownedRecord)?{a:ownedRecord.a,d:ownedRecord.d,h:ownedRecord.h,estimated:ownedRecord.ivStatus==='estimated'}:null;
  ivdexLeague=LEAGUES[league]?league:'great';
  ivdexPage=0;
  ['ivdexAtk','ivdexDef','ivdexHp','ivdexRank'].forEach(id=>$('#'+id).value='');
  $('#ivdexLimit').value='50';
+ locateOwnedIVPage();
  refreshIVDex();
  showTab('ivdex');
 }
@@ -680,6 +687,13 @@ function ivdexCache(){
  calcIVRank(p,0,0,0,ivdexLeague,limit);
  return ivCache.get(p.speciesId+'-'+ivdexLeague+'-'+limit);
 }
+function locateOwnedIVPage(){
+ if(!ivdexOwned)return;
+ if(['ivdexAtk','ivdexDef','ivdexHp','ivdexRank'].some(id=>$('#'+id).value.trim()!==''))return;
+ const cache=ivdexCache();
+ const idx=cache?.lookup.get((ivdexOwned.a<<8)+(ivdexOwned.d<<4)+ivdexOwned.h);
+ if(idx!==undefined)ivdexPage=Math.floor(idx/IVDEX_PAGE_SIZE);
+}
 function refreshIVDex(){
  if(!dataReady||!ivdexSpeciesId){$('#ivdexMatch').textContent='랭킹에서 포켓몬을 선택해 주세요.';return;}
  const p=pokemonById.get(ivdexSpeciesId);
@@ -688,7 +702,13 @@ function refreshIVDex(){
  $('#ivdexTitle').innerHTML=portraitImg(p)+`<div><div class="ivdex-name">${escapeHTML(nameOf(p))}</div><div class="ivdex-meta">${escapeHTML(p.speciesName)} · ${p?.types?.map(t=>TYPES[t]||t).join(' / ')||'타입 정보 없음'}</div></div>`;
  const cache=ivdexCache();if(!cache)return;
  const highest=cache.results[0];
+ const ownKey=ivdexOwned?((ivdexOwned.a<<8)+(ivdexOwned.d<<4)+ivdexOwned.h):null;
+ const ownIndex=ownKey===null?undefined:cache.lookup.get(ownKey);
  $('#ivdexSummary').innerHTML=`<div class="ivdex-summary-head"><span><b>${LEAGUES[ivdexLeague].label} 성능 순위</b> ${r?`전체 ${fmt(total)}마리 중 <strong>${fmt(r.rank)}위</strong>`:`전체 ${fmt(total)}마리 중 미등재`}</span><span><b>개체값 1위</b> ${highest.key>>8}/${(highest.key>>4)&15}/${highest.key&15}</span><span><b>1위 육성</b> CP ${fmt(highest.cp)} · Lv.${highest.level}</span></div>${r?`<div class="hint">PvPoke 추천 기술: ${movesOf(r,p)||'정보 없음'}</div>`:''}`;
+ if(ivdexOwned){
+  const ownSummary=ownIndex===undefined?'이 리그의 CP 제한에서 육성 불가':fmt(cache.results.length)+'개 조합 중 <strong>'+fmt(ownIndex+1)+'위</strong> · 상위 '+(100*(ownIndex+1)/cache.results.length).toFixed(2)+'%';
+  $('#ivdexSummary').innerHTML+='<div class="ivdex-owned-summary"><b>내 개체값</b> '+ivdexOwned.a+'/'+ivdexOwned.d+'/'+ivdexOwned.h+' · '+ownSummary+(ivdexOwned.estimated?' · 추정 개체값':'')+'</div>';
+ }
  const findValue=(id)=>{const t=$('#'+id).value.trim();if(!t)return null;const n=Number(t);if(!Number.isInteger(n)||n<0||n>15)throw Error('개체값은 0~15에서 선택하세요.');return n;};
  let a,d,h,rankTarget;
  try{
@@ -703,7 +723,7 @@ function refreshIVDex(){
  const rows=ivdexMatches.slice(start,start+IVDEX_PAGE_SIZE);
  $('#ivdexRows').innerHTML=rows.map(({v,rank})=>{
    const A=v.key>>8,D=(v.key>>4)&15,H=v.key&15;
-   return `<tr class="${rank<=10?'featured':''}"><td class="ivrank">${fmt(rank)}위</td><td class="ivvalue">${A}</td><td class="ivvalue">${D}</td><td class="ivvalue">${H}</td><td>${fmt(v.cp)}</td><td>${v.level}</td><td>${(100*v.product/highest.product).toFixed(2)}%</td><td><button class="btn tiny ghost" type="button" data-ivpick="${A},${D},${H}" aria-label="${A}/${D}/${H} 개체값 분석">분석</button></td></tr>`;
+   return `<tr class="${v.key===ownKey?'owned-iv':rank<=10?'featured':''}"><td class="ivrank">${fmt(rank)}위${v.key===ownKey?'<span class="ivdex-owned-label">내 포켓몬</span>':''}</td><td class="ivvalue">${A}</td><td class="ivvalue">${D}</td><td class="ivvalue">${H}</td><td>${fmt(v.cp)}</td><td>${v.level}</td><td>${(100*v.product/highest.product).toFixed(2)}%</td><td><button class="btn tiny ghost" type="button" data-ivpick="${A},${D},${H}" aria-label="${A}/${D}/${H} 개체값 분석">분석</button></td></tr>`;
  }).join('')||'<tr><td colspan="8" class="empty">해당 조건에 맞는 개체값이 없습니다.</td></tr>';
  $('#ivdexMatch').textContent=`${fmt(cache.results.length)}개 조합 중 ${fmt(ivdexMatches.length)}개 일치${(a!==null&&d!==null&&h!==null&&ivdexMatches.length===1)?` · ${fmt(ivdexMatches[0].rank)}위 (상위 ${(100*ivdexMatches[0].rank/cache.results.length).toFixed(2)}%)`:''}`;
  $('#ivdexPageInfo').textContent=`${fmt(start+Math.min(rows.length,1))}–${fmt(start+rows.length)} / ${fmt(ivdexMatches.length)} · ${ivdexPage+1}페이지`;
@@ -1826,14 +1846,14 @@ function cloudInit(){
 window.__pvpCloudLoaded=()=>{if(!cloudClient)cloudInit();};
 function init(){const initialDataLoad=fetchData();$$('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.tab));initPhoto();loadOwned();initTeamBuilder();initTeamDetail();cloudInit();boardInit();
  $('#backRank').onclick=()=>showTab('rankings');
- $$('#ivdexLeagues button').forEach(b=>b.onclick=()=>{ivdexLeague=b.dataset.league;ivdexPage=0;$('#ivdexRank').value='';refreshIVDex();});
+ $$('#ivdexLeagues button').forEach(b=>b.onclick=()=>{ivdexLeague=b.dataset.league;ivdexPage=0;$('#ivdexRank').value='';locateOwnedIVPage();refreshIVDex();});
  $('#ivdexSearch').onclick=()=>{ivdexPage=0;refreshIVDex();};
  $('#ivdexReset').onclick=()=>{['ivdexAtk','ivdexDef','ivdexHp','ivdexRank'].forEach(id=>$('#'+id).value='');ivdexPage=0;refreshIVDex();};
- $('#ivdexLimit').onchange=()=>{ivdexPage=0;refreshIVDex();};
+ $('#ivdexLimit').onchange=()=>{ivdexPage=0;locateOwnedIVPage();refreshIVDex();};
  $('#ivdexPrev').onclick=()=>{ivdexPage=Math.max(0,ivdexPage-1);refreshIVDex();};
  $('#ivdexNext').onclick=()=>{ivdexPage++;refreshIVDex();};
  ['ivdexAtk','ivdexDef','ivdexHp','ivdexRank'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ivdexPage=0;refreshIVDex();}}));
  $('#ivdexRows').addEventListener('click',e=>{const target=e.target.closest('[data-ivpick]');if(!target)return;const [a,d,h]=target.dataset.ivpick.split(',').map(Number);analyzePickedIV(a,d,h);});
-$$('#leagueButtons button').forEach(b=>b.onclick=()=>{activeLeague=b.dataset.league;visibleRows=60;$$('#leagueButtons button').forEach(v=>v.classList.toggle('active',v===b));renderRankings();});$('#rankSearch').oninput=()=>{visibleRows=60;renderRankings();};$('#moreBtn').onclick=()=>{visibleRows+=60;renderRankings();};$('#rankList').addEventListener('click',e=>{const t=e.target.closest('[data-id]');if(!t)return;openIVDex(t.dataset.id,activeLeague);});$('#speciesInput').addEventListener('input',()=>{selectedSpecies=null;editingOwnedId=null;renderOwnedMoveForm(null);markAnalysisDirty();suggestions();});['ivA','ivD','ivH'].forEach(id=>$('#'+id).addEventListener('input',markAnalysisDirty));$('#speciesInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#speciesSuggestions').classList.contains('show')){const first=$('#speciesSuggestions [data-choose]');if(first){e.preventDefault();selectPokemon(first.dataset.choose);}}});$('#speciesSuggestions').addEventListener('click',e=>{const t=e.target.closest('[data-choose]');if(t)selectPokemon(t.dataset.choose);});document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete'))$('#speciesSuggestions').classList.remove('show');});$('#analyzeForm').onsubmit=e=>{e.preventDefault();analyze();};$('#saveOwnedBtn').onclick=saveCurrent;$('#goAdd').onclick=()=>showTab('analyzer');$('#ownedList').addEventListener('click',e=>{const t=e.target.closest('[data-own-action]');if(!t)return;if(t.dataset.ownAction==='remove')removeOwned(t.dataset.owned);else goAnalyzeOwned(t.dataset.owned);});$('#refreshBtn').onclick=()=>fetchData(true);$('#exportBtn').onclick=exportOwned;$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async e=>{if(e.target.files?.[0])await importOwned(e.target.files[0]);e.target.value='';};$('#ownedChargedMove').addEventListener('change',refreshSecondMove);$('#ownedCP').addEventListener('input',()=>{updateAutoLeague();if(lastAnalysis)renderAnalysis();});updateAutoLeague();$('#buddyCap').onchange=()=>{if(lastAnalysis)analyze(true);};}
+$$('#leagueButtons button').forEach(b=>b.onclick=()=>{activeLeague=b.dataset.league;visibleRows=60;$$('#leagueButtons button').forEach(v=>v.classList.toggle('active',v===b));renderRankings();});$('#rankSearch').oninput=()=>{visibleRows=60;renderRankings();};$('#moreBtn').onclick=()=>{visibleRows+=60;renderRankings();};$('#rankList').addEventListener('click',e=>{const t=e.target.closest('[data-id]');if(!t)return;openIVDex(t.dataset.id,activeLeague);});$('#speciesInput').addEventListener('input',()=>{selectedSpecies=null;editingOwnedId=null;renderOwnedMoveForm(null);markAnalysisDirty();suggestions();});['ivA','ivD','ivH'].forEach(id=>$('#'+id).addEventListener('input',markAnalysisDirty));$('#speciesInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#speciesSuggestions').classList.contains('show')){const first=$('#speciesSuggestions [data-choose]');if(first){e.preventDefault();selectPokemon(first.dataset.choose);}}});$('#speciesSuggestions').addEventListener('click',e=>{const t=e.target.closest('[data-choose]');if(t)selectPokemon(t.dataset.choose);});document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete'))$('#speciesSuggestions').classList.remove('show');});$('#analyzeForm').onsubmit=e=>{e.preventDefault();analyze();};$('#saveOwnedBtn').onclick=saveCurrent;$('#goAdd').onclick=()=>showTab('analyzer');$('#ownedList').addEventListener('click',e=>{const t=e.target.closest('[data-own-action]');if(!t)return;if(t.dataset.ownAction==='remove')removeOwned(t.dataset.owned);else if(t.dataset.ownAction==='ivdex')goIVDexOwned(t.dataset.owned);else goAnalyzeOwned(t.dataset.owned);});$('#refreshBtn').onclick=()=>fetchData(true);$('#exportBtn').onclick=exportOwned;$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async e=>{if(e.target.files?.[0])await importOwned(e.target.files[0]);e.target.value='';};$('#ownedChargedMove').addEventListener('change',refreshSecondMove);$('#ownedCP').addEventListener('input',()=>{updateAutoLeague();if(lastAnalysis)renderAnalysis();});updateAutoLeague();$('#buddyCap').onchange=()=>{if(lastAnalysis)analyze(true);};}
 try{init();}catch(e){console.error('시작 오류:',e);const el=document.getElementById('loadMessage');if(el){el.style.display='block';el.innerHTML='<div class="alert">초기화 중 오류가 발생했습니다: '+String(e?.message||e).replaceAll('<','&lt;')+'</div><button class="btn" onclick="location.reload()">새로고침</button>'; }}
 </script></body></html>
