@@ -506,44 +506,61 @@ function teamMoveConfig(o,p,rank){
   actualMovesComplete:!evolved&&ownedMoveArray(m).every(Boolean),
   moveSource:evolved?'evolution':'owned',unlocked:m.unlocked};
 }
-// Static move-set quality heuristic, normalized against PvPoke's recommended set.
+// Adapted from PvPoke Pokemon.js initializeMove, generateMoveUsage and calculateCycleDPT.
+// Neutral target (no opponent); no battle simulation. Source: https://github.com/pvpoke/pvpoke/blob/master/src/js/pokemon/Pokemon.js
 function teamFastMetrics(id,types){
- const m=teamMovesById.get(id),turns=Number(m?.turns)||Number(m?.cooldown)/500;
+ const m=teamMovesById.get(id),turns=Number(m?.cooldown)/500||Number(m?.turns);
  if(!m||!(turns>0)||!Number.isFinite(Number(m.power))||!Number.isFinite(Number(m.energyGain))||Number(m.energy)!==0||m.category==='charged')return null;
- return {dpt:Number(m.power)*(types.includes(m.type)?1.2:1)/turns,ept:Number(m.energyGain)/turns};
+ const damage=Math.floor(Number(m.power)*(types.includes(m.type)?1.2:1)),gain=Number(m.energyGain);
+ return {damage,gain,turns,dpt:damage/turns,ept:gain/turns};
 }
 function teamChargeMetrics(id,types){
  const m=teamMovesById.get(id),energy=Number(m?.energy);
  if(!m||!(energy>0)||!Number.isFinite(Number(m.power)))return null;
  const chance=Math.max(0,Math.min(1,Number(m.buffApplyChance)||0));
- const sum=arr=>Array.isArray(arr)?arr.reduce((v,x)=>v+(Number(x)||0),0):0;
- let stages=0;
- if(m.buffTarget==='both')stages=sum(m.buffsSelf)-sum(m.buffsOpponent);
- else if(m.buffTarget==='self')stages=sum(m.buffs);
- else if(m.buffTarget==='opponent')stages=-sum(m.buffs);
- const buffFactor=Math.max(.8,Math.min(1.2,1+.08*chance*stages));
- const damage=Number(m.power)*(types.includes(m.type)?1.2:1)*buffFactor;
- return {energy,damage,dpe:damage/energy,type:m.type};
+ const damage=Math.floor(Number(m.power)*(types.includes(m.type)?1.2:1));
+ const buffs=m.buffs||[],self=m.buffTarget==='self',opponent=m.buffTarget==='opponent';
+ const selfDebuffing=self&&buffs.some(v=>v<0);
+ let statChangeFactor=1;
+ for(let i=0;i<buffs.length;i++){
+  const stage=Number(buffs[i])||0;
+  if(selfDebuffing&&i===1)continue;
+  const multiplier=stage>=0?(4+stage)/4:4/(4-stage);
+  if(self)statChangeFactor*=multiplier;
+  else if(opponent)statChangeFactor/=multiplier;
+ }
+ statChangeFactor=1+(statChangeFactor-1)*chance;
+ const buffEffect=self&&buffs[0]>0?buffs[0]*(80/energy):opponent&&buffs[1]<0?Math.abs(buffs[1])*(80/energy):0;
+ const dpe=damage/energy*(4+buffEffect*chance)/4;
+ const usage=Math.pow(damage/Math.pow(energy,2)*statChangeFactor,2);
+ return {id,energy,damage,dpe,usage,type:m.type};
+}
+function teamCycleDPT(fast,charge){
+ if(!fast||!charge||!(fast.gain>0))return 0;
+ const count=150/fast.gain;
+ return (count*fast.damage+charge.damage*(150/charge.energy-1)+1)/(count*fast.turns+1);
 }
 function teamMoveQuality(fast,charges){
- if(!fast)return null;
- const options=charges.filter(Boolean).map(c=>{
-  if(!(fast.ept>0))return {value:0,type:c.type};
-  const chargeTurns=c.energy/fast.ept;
-  const cycle=(fast.dpt*chargeTurns+c.damage)/(chargeTurns+1);
-  const pressure=c.dpe*fast.ept/(1+chargeTurns/40);
-  return {value:.75*cycle+.25*pressure,type:c.type};
- }).sort((a,b)=>b.value-a.value);
- const best=options[0],second=options[1];
- const flexibility=second&&best.value>0?Math.min(1,second.value/best.value)*(second.type!==best.type? .25 : .15):0;
- return .35*fast.dpt+.65*(best?best.value:fast.dpt)*(1+flexibility);
+ if(!fast||!charges.length)return null;
+ const options=[...charges].sort((a,b)=>b.usage-a.usage);
+ let chargedUsage=0;
+ for(let i=0;i<options.length;i++){
+  const m=options[i];
+  const redundant=options.slice(0,i).some(n=>m.type===n.type&&m.energy>=n.energy&&n.dpe>0&&m.dpe/n.dpe<1.3);
+  chargedUsage+=m.usage*(redundant ? .5 : 1);
+ }
+ const main=options[0],highestDPE=Math.max(...options.map(m=>m.dpe));
+ const yawn=teamFastMetrics('YAWN',[])||{damage:1,gain:12,turns:3};
+ const baseline=teamCycleDPT({...yawn,damage:1},main);
+ const fastUsage=fast.gain>0?Math.max(teamCycleDPT(fast,main)-baseline,.1)*Math.pow(Math.pow(fast.dpt*Math.pow(fast.ept,4),1/5),Math.max(highestDPE-1,1)):0;
+ return {fastUsage,chargedUsage};
 }
 function teamMoveFit(p,config){
  const types=p.types||[],rec=config.optimalMoveset||[],actual=config.actualMoveset||[];
  const refFast=teamFastMetrics(rec[0],types),refCharges=rec.slice(1).map(id=>teamChargeMetrics(id,types)).filter(Boolean);
  const baseline=teamMoveQuality(refFast,refCharges);
  let provisional=false;
- if(!refFast||!refCharges.length||!(baseline>0))return {ratio:null,factor:1,provisional:true};
+ if(!baseline||!(baseline.fastUsage>0)||!(baseline.chargedUsage>0))return {ratio:null,factor:1,provisional:true};
  let fast=teamFastMetrics(actual[0],types);
  if(!fast){fast=refFast;provisional=true;}
  const charges=[],used=new Set(actual.slice(1).filter(Boolean));
@@ -557,8 +574,12 @@ function teamMoveFit(p,config){
   if(c)charges.push(c);
  }
  const quality=teamMoveQuality(fast,charges);
- const ratio=Math.max(0,Math.min(1,quality/baseline));
- return {ratio,factor:.8+.2*ratio,provisional};
+ if(!quality)return {ratio:null,factor:1,provisional:true};
+ // LAB-specific aggregation: equally weighted geometric mean of the two capped relative usage metrics.
+ const fastRatio=Math.max(0,Math.min(1,quality.fastUsage/baseline.fastUsage));
+ const chargeRatio=Math.max(0,Math.min(1,quality.chargedUsage/baseline.chargedUsage));
+ const ratio=Math.sqrt(fastRatio*chargeRatio);
+ return {ratio,factor:.8+.2*ratio,provisional,fastRatio,chargeRatio};
 }
 function teamMoveDisplay(c){
  const optimal=movesOf({moveset:c.optimalMoveset||c.moveset||[]},c.p)||'추천 기술 정보 없음';
@@ -1457,8 +1478,8 @@ function renderTeamBuilder(){
  $$('#teamLeagueSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.league===teamLeague));
  const key=teamModeKey(teamLeague),base=teamBase(teamLeague);
  $$('#teamModeSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.mode===teamMode));
- $('#teamModeInfo').innerHTML=teamMode==='current'?'<b>현재 전력:</b> 실제 보유 형태만 평가하며 리그 성능 점수에 현재 CP ÷ 해당 개체의 최대 강화 CP를 곱합니다. 진화·강화를 가정하지 않습니다. 실제 기술의 DPT·EPT·DPE, 자속, 발동 비용, 기술 연계, 해방과 확률적 능력치 변화의 근사치를 추천 기술 조합과 비교합니다.':'<b>최대 강화:</b> 레벨 50 이하에서 CP 제한을 넘지 않는 최고 레벨까지 강화한다고 가정하며 진화형도 평가합니다.';
- $('#teamModeInfo').innerHTML+='<div style="margin-top:7px">자체 비교 점수 = '+(teamMode==='current'?'CP·기술 보정 리그 성능':'리그 순위')+' 50% + 방어 상성 보완 30% + '+(teamMode==='current'?'보유 기술':'추천 기술')+' 공격 범위 15% + 최대 강화 시 개체값 효율 5%. 동일 개체·동일 종 중복 금지. 실제 승률 예측이 아닙니다.</div>'+(teamMode==='current'?'<div style="margin-top:7px">성능 보정 = CP 도달률 × (0.8 + 0.2 × 기술 적합도). 추천 기술 조합 대비 최대 100%, 미해방은 두 번째 기술의 선택 폭 보너스가 없습니다. 기술 적합도는 자체 근사 지표입니다.</div>':'');
+ $('#teamModeInfo').innerHTML=teamMode==='current'?'<b>현재 전력:</b> 실제 보유 형태만 평가하며 리그 성능 점수에 현재 CP ÷ 해당 개체의 최대 강화 CP를 곱합니다. 진화·강화를 가정하지 않습니다. PvPoke 공개 기술 활용도 공식(노말 기술의 사이클 DPT·EPT, 스페셜 기술의 피해량²/에너지⁴, 자속, 능력치 변화, 동일 타입 중복 감점)을 상대 없는 중립 조건에 적용합니다.':'<b>최대 강화:</b> 레벨 50 이하에서 CP 제한을 넘지 않는 최고 레벨까지 강화한다고 가정하며 진화형도 평가합니다.';
+ $('#teamModeInfo').innerHTML+='<div style="margin-top:7px">자체 비교 점수 = '+(teamMode==='current'?'CP·기술 보정 리그 성능':'리그 순위')+' 50% + 방어 상성 보완 30% + '+(teamMode==='current'?'보유 기술':'추천 기술')+' 공격 범위 15% + 최대 강화 시 개체값 효율 5%. 동일 개체·동일 종 중복 금지. 실제 승률 예측이 아닙니다.</div>'+(teamMode==='current'?'<div style="margin-top:7px">성능 보정 = CP 도달률 × (0.8 + 0.2 × 기술 적합도). 노말·스페셜 기술 활용도를 각각 추천 조합 대비 최대 100%로 제한한 뒤 기하평균합니다. 미해방은 두 번째 기술 활용도가 제외됩니다. 기하평균과 최대 20% 감점은 LAB 자체 기준이며 PvPoke 공식 점수가 아닙니다.</div>':'');
  const options=base.anchorOptions||[];
  let anchorId=teamAnchors[key]||'';
  if(anchorId&&!options.some(c=>c.id===anchorId)){
