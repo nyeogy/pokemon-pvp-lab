@@ -858,7 +858,7 @@ function scanColor(r,g,b){
  return (r>185&&g>100&&g<204&&b<170&&r-g>38&&g-b>16)
      || (r>185&&g>100&&g<176&&b>89&&b<187&&r-g>52&&Math.abs(g-b)<52);
 }
-function readBars(canvas){
+function readBarsLegacy(canvas){
  const W=canvas.width,H=canvas.height;
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
  const bytes=ctx.getImageData(0,0,W,H).data;
@@ -904,6 +904,93 @@ function readBars(canvas){
          detail:reliable?'평가 막대 3개를 감지했습니다. 숫자를 직접 확인하세요.':
          filled.length?'평가 막대를 일부만 읽었습니다. IV를 직접 확인해 주세요.':
          '평가 막대를 찾지 못했습니다. 평가창이 보이는 전체 스크린샷인지 확인해 주세요.'};
+}
+// Detect the empty track as well as the coloured fill. A missing coloured
+// segment is zero only when the three aligned appraisal tracks are verified.
+function readBars(canvas){
+ const W=canvas.width,H=canvas.height;
+ const bytes=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data;
+ const x0=Math.round(W*.124),x1=Math.round(W*.466),width=x1-x0+1;
+ const step=Math.max(1,Math.round(W/500)),pad=Math.max(3,Math.round(H*.006));
+ const centers=[.754,.799,.844],ys=Math.max(1,Math.round(H/1900));
+ const pixel=(x,y)=>{
+  const i=(Math.max(0,Math.min(H-1,y))*W+Math.max(0,Math.min(W-1,x)))*4;
+  return [bytes[i],bytes[i+1],bytes[i+2]];
+ };
+ const lum=c=>(c[0]+c[1]+c[2])/3;
+ const chroma=c=>Math.max(...c)-Math.min(...c);
+ const warm=c=>scanColor(...c);
+ function line(y){
+  const bg=Math.max(...[.49,.51,.53].map(x=>lum(pixel(Math.round(W*x),y))));
+  let track=0,gray=0,rightGray=0,total=0,rightTotal=0,fill=0;
+  for(let x=x0;x<=x1;x+=step){
+   const c=pixel(x,y),colored=warm(c),v=lum(c);
+   const empty=chroma(c)<=32&&v>=120&&v<=244&&bg-v>=9;
+   total++;if(colored||empty)track++;
+   if(empty)gray++;
+   if(colored)fill++;
+   if(x>=x0+width*.82){rightTotal++;if(empty)rightGray++;}
+  }
+  const support=track/total,grayEnd=rightGray/Math.max(1,rightTotal);
+  // A mostly continuous horizontal track, including its unfilled end.
+  const valid=support>=.72&&(grayEnd>=.55||fill/total>=.78);
+  return {y,support,grayEnd,fill,valid,score:valid?support+Math.min(.08,fill/total*.08):0};
+ }
+ const cache=new Map(),getLine=y=>{if(!cache.has(y))cache.set(y,line(y));return cache.get(y);};
+ function findRow(mid){
+  let best=null;
+  for(let y=mid-pad;y<=mid+pad;y+=ys){
+   if(y<2||y>=H-2)continue;
+   const cur=getLine(y),above=getLine(y-ys),below=getLine(y+ys);
+   if(!cur.valid||!above.valid||!below.valid)continue;
+   const score=(cur.score+above.score+below.score)/3-Math.abs(y-mid)/Math.max(1,pad)*.012;
+   if(!best||score>best.score)best={...cur,score};
+  }
+  return best;
+ }
+ let best=null;
+ for(let offset=-.028;offset<=.029;offset+=.002){
+  const rows=centers.map(v=>findRow(Math.round(H*(v+offset))));
+  if(rows.some(v=>!v))continue;
+  const d1=rows[1].y-rows[0].y,d2=rows[2].y-rows[1].y;
+  if(Math.abs(d1-d2)>H*.008)continue;
+  const score=rows.reduce((n,v)=>n+v.score,0)-Math.abs(offset)*2-Math.abs(d1-d2)/H*3;
+  if(!best||score>best.score)best={rows,score};
+ }
+ if(!best)return readBarsLegacy(canvas);
+ const readings=best.rows.map(row=>{
+  const y=row.y,rad=Math.max(1,Math.round(H/1536));
+  const columns=[];
+  for(let x=x0;x<=x1;x++){
+   let hits=0;
+   for(let dy=-rad;dy<=rad;dy++)if(warm(pixel(x,y+dy)))hits++;
+   columns.push(hits>=Math.ceil((2*rad+1)/2));
+  }
+  let first=-1,last=-1,run=0,total=0;
+  const startLimit=Math.ceil(width*.045),gapLimit=Math.max(2,Math.ceil(width*.025));
+  for(let i=0;i<columns.length;i++){
+   if(columns[i]){
+    if(first<0){if(i>startLimit)break;first=i;}
+    last=i;run=0;total++;
+   }else if(first>=0&&++run>gapLimit)break;
+  }
+  const minFill=Math.max(2,Math.round(width*.018));
+  if(total<minFill){
+   // Only accept an empty track if no appreciable fill appears anywhere.
+   const stray=columns.filter(Boolean).length;
+   if(row.grayEnd>=.55&&stray<minFill)return {iv:0,center:y,peak:0,last:x0-1,filled:false};
+   return {iv:null,center:y,peak:stray,last:x0-1,filled:false};
+  }
+  const raw=(last+1)/width*15;
+  return {iv:Math.max(1,Math.min(15,Math.round(raw))),center:y,peak:total,last:x0+last,filled:true,raw};
+ });
+ const reliable=readings.every(r=>r.iv!==null);
+ if(!reliable){
+  const legacy=readBarsLegacy(canvas);
+  if(legacy.reliable)return legacy;
+ }
+ return {readings,ivs:reliable?readings.map(r=>r.iv):null,reliable,
+  detail:reliable?'평가 막대 3개(빈 막대 포함)를 확인했습니다. 숫자를 직접 확인하세요.':'일부 막대의 색상 또는 시작점이 불확실합니다. IV를 직접 확인해 주세요.'};
 }
 function drawScanPreview(bars){
  if(!scanImage)return;
