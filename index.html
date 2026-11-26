@@ -392,7 +392,7 @@ async function fetchData(force=false){
   const loaded=Object.fromEntries(resources.map(x=>[x.key,x.data]));
   if(!loaded.pokemon?.length||!loaded.great?.length||!loaded.ultra?.length||!loaded.master?.length)throw Error('리그 데이터의 일부가 비어 있습니다.');
   ivCache.clear();
-  pokemon=loaded.pokemon;ko=loaded.names;
+  pokemon=loaded.pokemon.map(p=>({...p,types:(p.types||[]).filter(t=>Object.prototype.hasOwnProperty.call(TYPES,t))}));ko=loaded.names;
   initializeMoveNames(loaded.moveEn,loaded.moveKo);
   teamMovesById=new Map(loaded.moves.map(x=>[x.moveId,x]));
   pokemonById=new Map(pokemon.map(p=>[p.speciesId,p]));
