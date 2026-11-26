@@ -141,12 +141,13 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 .portrait-shadow .portrait-art{filter:drop-shadow(0 0 3px #9e4bea) drop-shadow(0 0 6px #a45ef2)}
 .portrait-placeholder{display:none;color:var(--muted);font-weight:850;font-size:20px}
 .portrait-missing{border:1px dashed var(--line);background:var(--panel2)}.portrait-missing .portrait-placeholder{display:block}
+.custom-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.custom-slot{padding:13px;border:1px solid var(--line);border-radius:12px;background:#0f1b2e;min-width:0}.custom-slot .search{width:100%;padding:9px 10px;margin:8px 0}.custom-slot select{width:100%;min-width:0}.custom-slot .custom-member{margin-top:10px;min-height:40px}.role-rank{color:var(--mint);font-size:11px;margin-top:3px}.upgrade-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;border-top:1px solid var(--line);padding:12px 0}.upgrade-row .portrait{width:42px;height:42px}.upgrade-gain{font-weight:850;color:var(--mint);text-align:right}.upgrade-row .soft{margin-top:4px}@media(max-width:650px){.custom-slots{grid-template-columns:1fr}.upgrade-row{gap:8px}}
 </style>
 </head>
 <body><div class="shell">
 <header class="top"><div class="brand"><div class="logo">◉</div><div><div class="eyebrow">POKÉMON GO · PERSONAL PVP DEX</div><h1>배틀도감 <span style="color:var(--mint)">LAB</span></h1></div></div><div class="top-actions"><span id="dataStatus" class="status">데이터 연결 준비 중</span><span id="cloudHeaderStatus" class="account-status">로컬 보관함</span><button class="btn tiny ghost" id="accountTopBtn" type="button">로그인</button><button class="btn ghost" id="refreshBtn" type="button">↻ 데이터 새로고침</button></div></header>
 <section class="hero"><div><div class="eyebrow">YOUR PVP RESEARCH DESK</div><h2>순위부터 개체값까지, 한 번에.</h2><p>리그별 랭킹 · IV 4,096개 순위표 · 사진 자동 판독 · 최적 팀 TOP 5 · 타입 약점 분석 · 육성 우선순위 · 개인 보관함</p></div><div class="metric-row"><div class="metric"><b id="greatCount">—</b><small>슈퍼리그 평가 포켓몬</small></div><div class="metric"><b id="ultraCount">—</b><small>하이퍼리그 평가 포켓몬</small></div><div class="metric"><b id="ownedCount">0</b><small>내가 등록한 포켓몬</small></div></div></section>
-<nav class="tabs"><button class="tab active" data-tab="rankings">🏆 전체 랭킹</button><button class="tab" data-tab="ivdex">📊 개체값 순위표</button><button class="tab" data-tab="analyzer">🧬 개체값 분석</button><button class="tab" data-tab="collection">📦 내 포켓몬</button><button class="tab" data-tab="teams">⚔️ 최적 팀 TOP 5</button><button class="tab" data-tab="teamdetail">🔍 조합 상세 분석</button><button class="tab" data-tab="leaderboard">🏅 조합 랭킹</button><button class="tab" data-tab="account">👤 계정·동기화</button><button class="tab" data-tab="guide">⚙️ 데이터·안내</button></nav>
+<nav class="tabs"><button class="tab active" data-tab="rankings">🏆 전체 랭킹</button><button class="tab" data-tab="ivdex">📊 개체값 순위표</button><button class="tab" data-tab="analyzer">🧬 개체값 분석</button><button class="tab" data-tab="collection">📦 내 포켓몬</button><button class="tab" data-tab="teams">⚔️ 최적 팀 TOP 5</button><button class="tab" data-tab="customteam">🛠 커스텀 조합</button><button class="tab" data-tab="teamdetail">🔍 조합 상세 분석</button><button class="tab" data-tab="leaderboard">🏅 조합 랭킹</button><button class="tab" data-tab="account">👤 계정·동기화</button><button class="tab" data-tab="guide">⚙️ 데이터·안내</button></nav>
 <div id="loadMessage" class="loader"><div class="spinner"></div>배틀도감 데이터 연결 준비 중…<div class="hint">로딩 방식 개선 버전 · 2026-11-23</div></div>
 <section class="view active" id="view-rankings"><div class="section-head"><div><h3>리그별 전체 랭킹</h3><div class="sub" id="rankingSubtitle">공개된 PvPoke 종합 랭킹 · 포켓몬을 누르면 개체값 순위표를 볼 수 있습니다.</div></div><div class="league-switch" id="leagueButtons"><button data-league="great" class="active">슈퍼 · 1,500</button><button data-league="ultra">하이퍼 · 2,500</button><button data-league="master">마스터 · 무제한</button></div></div><div class="row spread mb18"><div class="rank-search-controls"><input class="search" id="rankSearch" placeholder="이름 검색 · 한글/영문/도감번호"><label class="checkrow rank-evolution-check" for="rankIncludeEvolutions"><input id="rankIncludeEvolutions" type="checkbox">진화 계열 포함</label></div><span class="sub" id="rankFilterInfo">—</span></div><div id="rankList" class="rank-list"></div><div style="text-align:center;margin:19px 0"><button class="btn" id="moreBtn" style="display:none">더 보기 +60</button></div></section>
 <section class="view" id="view-ivdex">
@@ -191,10 +192,15 @@ a{color:var(--blue)}button,input,select{font:inherit}button{cursor:pointer}butto
 <div class="row mb12"><div class="league-switch" id="teamModeSwitch"><button type="button" data-mode="current">현재 전력 기준</button><button type="button" data-mode="max" class="active">최대 강화 기준</button></div></div><div class="info" id="teamModeInfo"></div>
 <div class="team-anchor-panel"><div class="row spread"><div><label for="teamAnchorSelect">📌 반드시 포함할 포켓몬</label><div class="sub">보유 개체와 진화형을 선택하면 해당 포켓몬이 포함된 팀만 1~5위로 추천합니다. 선택하지 않으면 전체 최적 조합을 보여줍니다.</div></div><div class="team-anchor-actions"><select id="teamAnchorSelect" aria-label="팀에 고정할 포켓몬"><option value="">전체 보관함에서 자동 추천</option></select><button class="btn tiny ghost" type="button" id="teamAnchorClear">고정 해제</button></div></div></div>
 <div class="row spread mb18"><span class="sub" id="teamSummary">등록된 포켓몬을 확인하는 중…</span><span class="chip muted">선택한 조합은 상세 분석에서 확인</span></div>
-<div id="teamResults"><div class="empty">포켓몬을 등록하면 상위 5개 팀을 비교합니다.</div></div>
+<div id="teamResults"><div class="empty">포켓몬을 등록하면 상위 5개 팀을 비교합니다.</div></div><div class="panel"><div class="section-head"><div><h3>⚡ 기술 변경·해방 우선순위</h3><div class="sub">현재 전력 기준 · 개체별 최고 포함 조합에서 한 번의 기술 개선으로 얻는 점수 상승량</div></div></div><div id="moveUpgradeList"><div class="empty">보유 기술을 등록하면 분석합니다.</div></div></div>
 <div class="panel training-panel"><div class="section-head"><div><h3>🌱 내 포켓몬 육성 우선순위</h3><div class="sub">최대 강화 시점을 가정해, 각 개체가 최고의 팀 구성에 얼마나 기여하는지 비교합니다.</div></div><span class="chip muted">포켓몬 고정 여부와 독립적으로 평가</span></div><div id="teamTrainingList"><div class="empty">3마리 이상 등록하면 육성 우선순위를 계산합니다.</div></div></div>
-<p class="hint">추천 역할(선봉·교체·마무리)은 타입 상성과 순위로 추정하며 실전 교체·에너지·실드 시뮬레이션이 아닙니다. 특별 기술의 습득 조건, 사탕·별의모래 비용, 그림자 개체의 실제 기술 보유 여부는 별도로 확인해 주세요. 현재 CP 1300~1500은 슈퍼, 2200~2500은 하이퍼, 2501 이상은 마스터에 자동 배정합니다. 나머지는 보관만 하고 팀에서 제외합니다. 진화 후 CP 제한도 확인합니다.</p>
+<p class="hint">추천 역할은 PvPoke 역할별 순위의 6가지 배치를 비교하며, 자료가 없으면 기존 타입 상성·종합 순위 방식으로 배정합니다. 점수에는 역할 배정이 영향을 주지 않으며 실전 교체·에너지·실드 시뮬레이션이 아닙니다. 특별 기술의 습득 조건, 사탕·별의모래 비용, 그림자 개체의 실제 기술 보유 여부는 별도로 확인해 주세요. 현재 CP 1300~1500은 슈퍼, 2200~2500은 하이퍼, 2501 이상은 마스터에 자동 배정합니다. 나머지는 보관만 하고 팀에서 제외합니다. 진화 후 CP 제한도 확인합니다.</p>
 </section>
+<section class="view" id="view-customteam">
+<div class="section-head"><div><h3>커스텀 조합 만들기</h3><div class="sub">보유 개체·가상 포켓몬으로 원하는 3마리를 직접 구성하고 분석합니다.</div></div><div class="league-switch" id="customLeagueSwitch"><button data-league="great" type="button">슈퍼 · 1,500</button><button data-league="ultra" type="button">하이퍼 · 2,500</button><button data-league="master" type="button">마스터</button></div></div>
+<div class="row mb12"><div class="league-switch" id="customModeSwitch"><button type="button" data-mode="current">현재 전력 기준</button><button type="button" data-mode="max">최대 강화 기준</button></div></div>
+<div class="info">보유 개체는 선택한 평가 모드와 리그에 맞는 후보만 표시합니다. 가상 포켓몬은 리그 내 IV 1위·최대 강화·추천 기술로 가정합니다. 보관함이나 사용자 랭킹에는 저장하지 않습니다.</div>
+<div class="panel"><div id="customSlots" class="custom-slots"></div><div class="row" style="margin-top:14px"><button type="button" class="btn primary" id="customDetail">상세 분석 보기</button><button type="button" class="btn ghost" id="customReset">초기화</button></div></div><div id="customResult"></div></section>
 <section class="view" id="view-teamdetail">
  <div class="section-head"><div><h3>선택한 조합 상세 분석</h3><div class="sub">선택한 팀의 방어·공격 상성, 메타 대응과 개선 방향을 확인합니다.</div></div><button type="button" class="btn ghost" id="detailBack">← 최적 팀 TOP 5</button></div>
  <div class="league-switch" id="detailLeagueSwitch" style="margin:14px 0"><button type="button" data-league="great" class="active">슈퍼리그</button><button type="button" data-league="ultra">하이퍼리그</button><button type="button" data-league="master">마스터리그</button></div>
@@ -382,6 +388,7 @@ async function fetchData(force=false){
  try{db=await openDB();}catch(e){console.warn('IndexedDB is unavailable',e);}
  try{
   const resources=await Promise.all(Object.entries(URLS).map(([key,url])=>fetchPvpResource(key,url,force,db)));
+  try{const response=await fetch(PVP_SITE_DATA_PATH+'roles.json',{cache:force?'no-store':'default',signal:AbortSignal.timeout(7000)});if(!response.ok)throw Error('role data');const raw=await response.json();teamRoleRanks=Object.fromEntries(Object.entries(raw).map(([league,roles])=>[league,Object.fromEntries(Object.entries(roles).map(([role,ids])=>[role,{total:ids.length,index:new Map(ids.map((id,i)=>[id,i+1]))}]))]));}catch(e){console.warn('Role ranking snapshot unavailable',e);}
   const loaded=Object.fromEntries(resources.map(x=>[x.key,x.data]));
   if(!loaded.pokemon?.length||!loaded.great?.length||!loaded.ultra?.length||!loaded.master?.length)throw Error('리그 데이터의 일부가 비어 있습니다.');
   ivCache.clear();
@@ -400,7 +407,7 @@ async function fetchData(force=false){
   const sources=new Set(resources.map(x=>x.origin));
   const status=sources.has('cache')?'보관 데이터 사용':sources.has('remote')?'일부 외부 자료 포함':'사이트 저장 자료';
   $('#dataStatus').textContent=status+' · '+new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  renderRankings();renderOwned();invalidateTeamCache();
+  renderRankings();renderOwned();invalidateTeamCache();if($('#view-customteam')?.classList.contains('active'))renderCustomTeam();
   if(document.querySelector('#view-leaderboard')?.classList.contains('active'))boardRender();if(document.querySelector('#view-teamdetail')?.classList.contains('active'))renderTeamDetail();
   if(lastAnalysis)analyze(true);
  }catch(e){
@@ -410,7 +417,7 @@ async function fetchData(force=false){
   $('#dataStatus').textContent='데이터 연결 실패';
  }finally{$('#refreshBtn').disabled=false;}
 }
-function showTab(key){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));const nav=$('.tabs'),activeTab=nav?.querySelector('.tab.active');if(activeTab){const a=activeTab.getBoundingClientRect(),n=nav.getBoundingClientRect();if(a.left<n.left+6)nav.scrollLeft+=a.left-n.left-8;else if(a.right>n.right-6)nav.scrollLeft+=a.right-n.right+8;}$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+key));if(key==='collection')renderOwned();if(key==='teams')renderTeamBuilder();if(key==='teamdetail')renderTeamDetail();if(key==='account')cloudRenderUI();if(key==='leaderboard')boardRefresh();window.scrollTo({top:0,behavior:'smooth'});}
+function showTab(key){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));const nav=$('.tabs'),activeTab=nav?.querySelector('.tab.active');if(activeTab){const a=activeTab.getBoundingClientRect(),n=nav.getBoundingClientRect();if(a.left<n.left+6)nav.scrollLeft+=a.left-n.left-8;else if(a.right>n.right-6)nav.scrollLeft+=a.right-n.right+8;}$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+key));if(key==='collection')renderOwned();if(key==='teams')renderTeamBuilder();if(key==='customteam')renderCustomTeam();if(key==='teamdetail')renderTeamDetail();if(key==='account')cloudRenderUI();if(key==='leaderboard')boardRefresh();window.scrollTo({top:0,behavior:'smooth'});}
 function rankSearchMatches(q,p,r=p){return (`${r?.speciesName||''} ${r?.speciesId||''} ${p?.dex||''} ${p?nameOf(p):''}`).toLowerCase().includes(q);}
 // Search-only undirected evolution graph: include ancestors, descendants and sibling branches.
 function rankEvolutionFamilyMatches(q){
@@ -585,7 +592,7 @@ function teamMoveDisplay(c){
  const optimal=movesOf({moveset:c.optimalMoveset||c.moveset||[]},c.p)||'추천 기술 정보 없음';
  const actual=(c.actualMoveset||[]).map(id=>id?movesOf({moveset:[id]},c.p):'<span class="soft">미등록</span>').join(' · ');
  return '<span class="soft">최적 기술'+(c.mode==='current'?'':' (평가 기준)')+'</span><br>'+optimal+
- '<br><span class="soft">보유 기술</span><br>'+(c.moveSource==='evolution'?'진화 후 미확정':(actual||'미등록'))+(c.mode==='current'?'<br><span class="soft">기술 적합도 '+(c.moveFit?.ratio==null?'산정 불가':(c.moveFit.ratio*100).toFixed(1)+'%')+(c.moveFit?.provisional?' · 잠정 평가':'')+'</span>':'');
+ '<br><span class="soft">'+(c.virtual?'가정 기술':'보유 기술')+'</span><br>'+(c.moveSource==='evolution'?'진화 후 미확정':(actual||'미등록'))+(c.mode==='current'?'<br><span class="soft">기술 적합도 '+(c.moveFit?.ratio==null?'산정 불가':(c.moveFit.ratio*100).toFixed(1)+'%')+(c.moveFit?.provisional?' · 잠정 평가':'')+'</span>':'');
 }
 
 function selectPokemon(id){if(!dataReady)return;const p=pokemonById.get(id);if(!p)return;editingOwnedId=null;selectedSpecies=p;$('#speciesInput').value=nameOf(p);$('#speciesSuggestions').classList.remove('show');renderOwnedMoveForm(p);markAnalysisDirty();}
@@ -1331,12 +1338,12 @@ const TEAM_WEAK={normal:['rock','steel'],fire:['fire','water','rock','dragon'],w
 const TEAM_IMMUNE={normal:['ghost'],electric:['ground'],fighting:['ghost'],poison:['steel'],ground:['flying'],psychic:['dark'],ghost:['normal'],dragon:['fairy']};
 const TEAM_STORAGE_KEY='pvp-lab-selected-team-v1';
 const TEAM_ANCHOR_KEY='pvp-lab-anchor-v1';
-let teamMode='max',teamCurrentCache={},teamLeague='great',teamCache={great:null,ultra:null,master:null},teamFilteredCache={great:null,ultra:null,master:null},teamMovesById=new Map(),teamSelected={},teamAnchors={},teamTrainingExpanded={great:false,ultra:false,master:false};
+let teamRoleRanks={},teamMode='max',teamCurrentCache={},teamLeague='great',teamCache={great:null,ultra:null,master:null},teamFilteredCache={great:null,ultra:null,master:null},teamMovesById=new Map(),teamSelected={},teamAnchors={},teamTrainingExpanded={great:false,ultra:false,master:false};
 try{teamSelected=JSON.parse(localStorage.getItem(TEAM_STORAGE_KEY)||'{}')||{};}catch(e){teamSelected={};}
 try{teamAnchors=JSON.parse(localStorage.getItem(TEAM_ANCHOR_KEY)||'{}')||{};}catch(e){teamAnchors={};}
 function teamModeKey(league,mode=teamMode){return mode==='current'?league+'-current':league;}
 function teamBase(league,mode=teamMode){const cache=mode==='current'?teamCurrentCache:teamCache;return cache[league]||(cache[league]=teamCompute(league,'',mode));}
-function invalidateTeamCache(){teamCurrentCache={};teamCache={great:null,ultra:null,master:null};teamFilteredCache={great:null,ultra:null,master:null};if(typeof document!=='undefined'&&document.querySelector('#view-teams')?.classList.contains('active')){setTimeout(()=>renderTeamBuilder(),0);}if(document.querySelector('#view-teamdetail')?.classList.contains('active'))setTimeout(()=>renderTeamDetail(),0);}
+function invalidateTeamCache(){teamCurrentCache={};teamCache={great:null,ultra:null,master:null};teamFilteredCache={great:null,ultra:null,master:null};if(typeof document!=='undefined'&&document.querySelector('#view-teams')?.classList.contains('active')){setTimeout(()=>renderTeamBuilder(),0);}if(document.querySelector('#view-teamdetail')?.classList.contains('active'))setTimeout(()=>renderTeamDetail(),0);if(document.querySelector('#view-customteam')?.classList.contains('active'))setTimeout(()=>renderCustomTeam(),0);}
 function teamEffectiveness(attack,defenseTypes){let x=1;for(const t of defenseTypes||[]){if(TEAM_IMMUNE[attack]?.includes(t))x*=.390625;else if(TEAM_SUPER[attack]?.includes(t))x*=1.6;else if(TEAM_WEAK[attack]?.includes(t))x*=.625;}return x;}
 function teamCandidate(o,p,league,mode='max'){
  const rank=rankIndexes[league]?.get(p.speciesId);if(!rank||!p.baseStats||!validIVs(o))return null;
@@ -1371,7 +1378,7 @@ function teamCandidate(o,p,league,mode='max'){
  const config=teamMoveConfig(o,p,rank);
  const moveFit=current?teamMoveFit(p,config):{ratio:1,factor:1,provisional:false};
  const power=basePower*readiness*moveFit.factor;
- return {mode,basePower,readiness,targetCP,id:o.id+'|'+p.speciesId,owned:o,p,rank,total,cp:current?o.cp:targetCP,level:current?(currentLevelKnown?1+currentIdx/2:null):1+idx/2,idx,types:p.types||[],...config,...(current?{moveset:config.actualMoveset,movesComplete:config.actualMovesComplete}:{}),moveFit,power,ivEfficiency,atk,def,hp,hasUnknownCP:!o.cp,levelUncertain:!!o.cp&&!currentLevelKnown,solo:power+Math.max(-4,Math.min(4,(ivEfficiency-96)*.45))};
+ return {league,mode,basePower,readiness,targetCP,id:o.id+'|'+p.speciesId,owned:o,p,rank,total,cp:current?o.cp:targetCP,level:current?(currentLevelKnown?1+currentIdx/2:null):1+idx/2,idx,types:p.types||[],...config,...(current?{moveset:config.actualMoveset,movesComplete:config.actualMovesComplete}:{}),moveFit,power,ivEfficiency,atk,def,hp,hasUnknownCP:!o.cp,levelUncertain:!!o.cp&&!currentLevelKnown,solo:power+Math.max(-4,Math.min(4,(ivEfficiency-96)*.45))};
 }
 function collectTeamCandidates(league,anchorId='',mode='max'){
  let all=[];const warnings=[];let eligibleOwners=0;
@@ -1430,7 +1437,7 @@ function teamScoreTriple(items){
  const score=.5*strength+.3*defense.score+.15*attack.score+.05*iv;
  return {items,score,strength,iv,defense,attack};
 }
-function teamFindRoles(items){
+function teamFindRolesLegacy(items){
  // Lead: high general performance. Switch: few weaknesses and many resistances.
  // Closer: remaining candidate with stronger offensive move coverage.
  const sorted=[...items];
@@ -1445,6 +1452,25 @@ function teamFindRoles(items){
  const closer=others.find(c=>c!==lead);
  return [{role:'선봉',c:lead},{role:'교체',c:sw},{role:'마무리',c:closer}];
 }
+function teamRoleRank(c,role){
+ const data=teamRoleRanks[c.league]?.[role];
+ const rank=data?.index.get(c.p.speciesId);
+ return rank?{rank,total:data.total,score:100*(1-(rank-1)/Math.max(1,data.total-1))}:null;
+}
+const TEAM_ROLE_KEYS=['leads','switches','closers'],TEAM_ROLE_NAMES=['선봉','교체','마무리'];
+function teamFindRoles(items){
+ if(items.length!==3)return [];
+ const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+ if(!items.every(c=>TEAM_ROLE_KEYS.every(role=>teamRoleRank(c,role))))return teamFindRolesLegacy(items);
+ let best=null;
+ for(const order of perms){
+  const roles=order.map((idx,i)=>({role:TEAM_ROLE_NAMES[i],c:items[idx],roleRank:teamRoleRank(items[idx],TEAM_ROLE_KEYS[i])}));
+  const score=roles.reduce((n,x)=>n+x.roleRank.score*(x.c.mode==='current'?(x.c.readiness??1)*(x.c.moveFit?.factor??1):1),0)/3;
+  if(!best||score>best.score)best={roles,score};
+ }
+ return best.roles;
+}
+function roleRankText(roleRank){return roleRank?'<div class="role-rank">역할 순위 '+fmt(roleRank.total)+'마리 중 '+fmt(roleRank.rank)+'위</div>':'<div class="soft">역할 순위 미확인 · 자체 배정</div>';}
 function teamIdentity(t){return t.items.map(c=>c.id).sort().join('::');}
 function teamCompute(league,anchorId='',mode='max'){
  const {candidates,anchorOptions,eligibleOwners,warnings,totalOptions}=collectTeamCandidates(league,anchorId,mode);
@@ -1547,10 +1573,10 @@ function renderTrainingPriorities(priorities){
 function showTeamCard(t,index){
  t.roles=teamFindRoles(t.items);
  const id=teamIdentity(t),chosen=teamSelected[teamModeKey(teamLeague)]===id;
- const details=t.roles.map(({role,c})=>{
+ const details=t.roles.map(({role,c,roleRank})=>{
    // Rank IV precisely only for team members shown to the user.
    const iv=calcIVRank(c.p,c.owned.a,c.owned.d,c.owned.h,teamLeague,50);
-   return `<div class="team-pokemon"><div class="team-role">${role}</div>${portraitImg(c.p)}<div class="team-pokemon-text"><b>${escapeHTML(nameOf(c.p))}</b><div class="soft">${fmt(c.total)}마리 중 ${fmt(c.rank.rank)}위</div><div class="soft">IV ${c.owned.a}/${c.owned.d}/${c.owned.h} · ${iv?fmt(iv.total)+'개 중 '+fmt(iv.rank)+'위':'순위 없음'}</div><div class="soft">${c.mode==='current'?'현재':'강화'} CP ${fmt(c.cp)} · Lv.${c.level??'미확인'}</div>${c.mode==='current'?`<div class="soft">목표 CP ${fmt(c.targetCP)} · 도달률 ${(c.readiness*100).toFixed(1)}%</div>`:''}<div class="team-moves">${teamMoveDisplay(c)}</div></div></div>`;
+   return `<div class="team-pokemon"><div class="team-role">${role}</div>${portraitImg(c.p)}<div class="team-pokemon-text"><b>${escapeHTML(nameOf(c.p))}</b><div class="soft">${fmt(c.total)}마리 중 ${fmt(c.rank.rank)}위</div>${roleRankText(roleRank)}<div class="soft">IV ${c.owned.a}/${c.owned.d}/${c.owned.h} · ${iv?fmt(iv.total)+'개 중 '+fmt(iv.rank)+'위':'순위 없음'}</div><div class="soft">${c.mode==='current'?'현재':'강화'} CP ${fmt(c.cp)} · Lv.${c.level??'미확인'}</div>${c.mode==='current'?`<div class="soft">목표 CP ${fmt(c.targetCP)} · 도달률 ${(c.readiness*100).toFixed(1)}%</div>`:''}<div class="team-moves">${teamMoveDisplay(c)}</div></div></div>`;
  }).join('');
  const risk=t.defense.threats.length?`<span class="team-risk">공통 약점: ${t.defense.threats.slice(0,3).map(x=>TYPES[x.type]).join(' · ')}</span>`:'<span class="team-good">공통 약점 적음</span>';
  return `<article class="team-result ${chosen?'chosen':''}"><div class="row spread team-result-head"><div class="row"><span class="team-place">${index+1}위</span><span class="team-score">${t.score.toFixed(1)}점 <small>/ 100 · 비교용 자체 점수</small></span></div><button class="btn ${chosen?'primary':'ghost'}" type="button" data-team-select="${escapeHTML(id)}">${chosen?'상세 정보 다시 보기':'상세 정보 보기'}</button></div><div class="team-roster">${details}</div><div class="team-score-details">${teamMode==='current'?'CP·기술 보정 성능':'리그 순위'} ${t.strength.toFixed(1)} · 방어 보완 ${t.defense.score.toFixed(1)} · 공격 범위 ${t.attack.score.toFixed(1)} · 개체값 효율 ${t.iv.toFixed(1)}</div><div class="team-explanation">${teamExplain(t)}</div><div class="row" style="margin-top:10px">${risk}${t.attack.partial?'<span class="sub">일부 기술 타입 미확인</span>':''}</div></article>`;
@@ -1593,6 +1619,7 @@ function renderTeamBuilder(){
    $('#teamResults').innerHTML=`${notices.length?`<div class="info">${notices.map(escapeHTML).join(' ')}</div>`:''}<div class="team-results">${result.teams.map((t,i)=>showTeamCard(t,i)).join('')}</div>`;
  }
  renderTrainingPriorities(teamBase(teamLeague,'max').priorities||[]);
+ renderMoveUpgrades(teamLeague);
 }
 function initTeamBuilder(){
  $$('#teamModeSwitch button').forEach(b=>b.onclick=()=>{teamMode=b.dataset.mode==='current'?'current':'max';renderTeamBuilder();});
@@ -1603,7 +1630,7 @@ function initTeamBuilder(){
    const b=e.target.closest('[data-team-select]');if(!b)return;
    teamSelected[teamModeKey(teamLeague)]=b.dataset.teamSelect;
    try{if(!cloudSession)localStorage.setItem(TEAM_STORAGE_KEY,JSON.stringify(teamSelected));}catch(e){} cloudSavePreferences();
-   detailLeague=teamLeague;detailCoverageMode=teamMode==='current'?'actual':'optimal';showTab('teamdetail');
+   detailSource='auto';detailLeague=teamLeague;detailCoverageMode=teamMode==='current'?'actual':'optimal';showTab('teamdetail');
  });
  $('#teamTrainingList').addEventListener('click',e=>{
    const lock=e.target.closest('[data-training-lock]');
@@ -1615,8 +1642,123 @@ function initTeamBuilder(){
 
 
 
+
+// Single-action technology improvements in an unchanged, current-power trio.
+function moveUpgradeActions(c){
+ const m=sanitizeOwnedMoves(c.p,c.owned.moves),rec=c.optimalMoveset||[],out=[];
+ if(!m.fast||!m.charged||(m.unlocked&&!m.second)||c.moveFit?.provisional)return out;
+ const add=(slot,id,kind)=>{
+  const pool=movePool(c.p,kind),entry=pool.find(x=>x.id===id);
+  if(!entry)return;
+  const changed={...m,[slot]:id};
+  if(slot==='second')changed.unlocked=true;
+  const upgraded=teamCandidate({...c.owned,moves:changed},c.p,c.league,'current');
+  if(!upgraded||upgraded.moveFit?.provisional)return;
+  const old=m[slot],name=entry.name+(entry.special?'*':'');
+  const label=!old?'해방 → '+name:(localMoveName(old)==='한국어 명칭 미확인'?(teamMovesById.get(old)?.name||old):localMoveName(old))+' → '+name;
+  out.push({upgraded,label,special:entry.special,unlock:slot==='second'&&!m.unlocked});
+ };
+ if(rec[0]&&rec[0]!==m.fast)add('fast',rec[0],'fast');
+ for(const id of rec.slice(1)){
+  if(!id||id===m.charged||id===m.second)continue;
+  add('charged',id,'charged');
+  if(m.unlocked||c.p.thirdMoveCost!==false)add('second',id,'charged');
+ }
+ return out;
+}
+let moveUpgradeCache={};
+function moveUpgradeResults(league){
+ const base=teamBase(league,'current');
+ if(moveUpgradeCache[league]?.base===base)return moveUpgradeCache[league].rows;
+ const rows=[];
+ for(const item of base.priorities||[]){
+  const c=item.c,team=item.team,at=team.items.findIndex(x=>x.id===c.id);
+  if(at<0)continue;
+  let best=null;
+  for(const action of moveUpgradeActions(c)){
+   const revised=team.items.slice();revised[at]=action.upgraded;
+   const next=teamScoreTriple(revised),gain=next.score-team.score;
+   if(gain>.005&&(!best||gain>best.gain))best={...action,gain,old:team.score,next:next.score,c,team};
+  }
+  if(best)rows.push(best);
+ }
+ rows.sort((a,b)=>b.gain-a.gain);
+ moveUpgradeCache[league]={base,rows};return rows;
+}
+function renderMoveUpgrades(league){
+ const el=$('#moveUpgradeList'),base=teamBase(league,'current'),rows=moveUpgradeResults(league);
+ const hint='<p class="hint">추천 기술로 한 슬롯만 변경하거나 해방하는 경우를 비교합니다. 포켓몬별 현재 최고 포함 조합에서 나머지 두 마리와 CP는 그대로 유지합니다. 비용은 비교하지 않으며 미등록·불확실 기술 개체는 제외합니다. * 특별 기술은 이벤트 또는 대단한 기술머신 등이 필요할 수 있습니다.</p>';
+ if(!rows.length){el.innerHTML='<div class="empty">'+(base.teams.length?'등록된 기술에서 점수가 오르는 단일 개선을 확인하지 못했습니다.':'현재 전력으로 서로 다른 3마리 팀을 구성해야 합니다.')+'</div>'+hint;return;}
+ el.innerHTML=rows.slice(0,10).map((x,i)=>'<div class="upgrade-row">'+portraitImg(x.c.p)+'<div><b>'+(i+1)+'. '+escapeHTML(nameOf(x.c.p))+'</b><div>'+escapeHTML(x.label)+'</div><div class="soft">함께: '+x.team.items.filter(v=>v.id!==x.c.id).map(v=>escapeHTML(nameOf(v.p))).join(' · ')+'</div><div class="soft">'+x.old.toFixed(2)+' → '+x.next.toFixed(2)+'점'+(x.unlock?' · 해방 비용 필요':'')+'</div></div><div class="upgrade-gain">+'+x.gain.toFixed(2)+'점</div></div>').join('')+hint;
+}
+let customLeague='great',customMode='max',customSelections={};
+function customKey(league=customLeague,mode=customMode){return league+'-'+mode;}
+function customSlotsFor(league=customLeague,mode=customMode){const key=customKey(league,mode);return customSelections[key]||(customSelections[key]=['','','']);}
+function customOwnedCandidates(league,mode){
+ const result=[];
+ for(const o of owned){
+  if(!validIVs(o))continue;
+  const base=pokemonById.get(o.speciesId);
+  for(const p of (mode==='current'?(base?[base]:[]):familyOf(base))){
+   const c=teamCandidate(o,p,league,mode);if(c)result.push(c);
+  }
+ }
+ return result.sort((a,b)=>b.solo-a.solo);
+}
+function customVirtualCandidate(id,league,mode){
+ const p=pokemonById.get(id),rank=rankIndexes[league]?.get(id);
+ if(!p||!rank||!p.baseStats||p.released===false||p.tags?.some(x=>x==='mega'||x==='primal'))return null;
+ calcIVRank(p,0,0,0,league,50);
+ const best=ivCache.get(p.speciesId+'-'+league+'-50')?.results?.[0];if(!best)return null;
+ const a=best.key>>8,d=(best.key>>4)&15,h=best.key&15,total=ranks[league].length,basePower=100*(1-(rank.rank-1)/Math.max(1,total-1));
+ const optimalMoveset=(rank.moveset||[]).slice(0,3),complete=optimalMoveset.length>=2&&optimalMoveset.every(Boolean),reference=Number(rank.stats?.product||0)*1000;
+ const ivEfficiency=reference>100?Math.max(80,Math.min(100,100*best.product/reference)):96;
+ return {virtual:true,league,mode,p,rank,total,id:'virtual|'+id,owned:{id:'virtual|'+id,speciesId:id,a,d,h,cp:best.cp},types:p.types||[],cp:best.cp,targetCP:best.cp,level:best.level,readiness:1,basePower,power:basePower,ivEfficiency,moveset:optimalMoveset,optimalMoveset,actualMoveset:optimalMoveset,movesComplete:complete,optimalMovesComplete:complete,actualMovesComplete:complete,moveSource:'virtual',unlocked:optimalMoveset.length>2,moveFit:{ratio:1,factor:1,provisional:!complete}};
+}
+function customMembers(league,mode){
+ const ids=customSlotsFor(league,mode),ownedMap=new Map(customOwnedCandidates(league,mode).map(c=>[c.id,c]));
+ return ids.map(id=>id.startsWith('v:')?customVirtualCandidate(id.slice(2),league,mode):id.startsWith('o:')?ownedMap.get(id.slice(2)):null);
+}
+function customTeamResult(league,mode){
+ const items=customMembers(league,mode);
+ if(items.some(c=>!c)||new Set(items.map(c=>c.p.speciesId)).size!==3||new Set(items.map(c=>c.owned.id)).size!==3)return null;
+ const t=teamScoreTriple(items);t.roles=teamFindRoles(items);return t;
+}
+function customOptions(i,query=''){
+ const selected=customSlotsFor()[i],q=query.trim().toLowerCase();
+ const opt=(value,label)=>'<option value="'+escapeHTML(value)+'">'+escapeHTML(label)+'</option>';
+ const matches=(p,extra='')=>!q||rankSearchMatches(q,p)||extra.toLowerCase().includes(q);
+ const own=customOwnedCandidates(customLeague,customMode).filter(c=>matches(c.p,c.owned.nick||'')||selected==='o:'+c.id).map(c=>opt('o:'+c.id,nameOf(c.p)+' · CP '+fmt(c.cp)+' · '+c.owned.a+'/'+c.owned.d+'/'+c.owned.h+(c.owned.nick?' · '+c.owned.nick:'')));
+ const virtual=ranks[customLeague].filter(r=>{const p=pokemonById.get(r.speciesId);return p&&p.baseStats&&p.released!==false&&!p.tags?.some(x=>x==='mega'||x==='primal')&&(matches(p)||selected==='v:'+r.speciesId);}).map(r=>opt('v:'+r.speciesId,nameOf(pokemonById.get(r.speciesId))+' · '+fmt(r.rank)+'위'));
+ return '<option value="">포켓몬 선택</option><optgroup label="내 포켓몬">'+own.join('')+'</optgroup><optgroup label="가상 포켓몬 · 최적 IV/강화/기술">'+virtual.join('')+'</optgroup>';
+}
+function renderCustomResult(){
+ const items=customMembers(customLeague,customMode);
+ $$('#customSlots .custom-member').forEach((el,i)=>{const c=items[i];el.innerHTML=c?'<b>'+escapeHTML(nameOf(c.p))+'</b> '+(c.virtual?'<span class="chip muted">가상</span>':'')+'<div class="soft">IV '+c.owned.a+'/'+c.owned.d+'/'+c.owned.h+' · CP '+fmt(c.cp)+'</div>':'<span class="soft">선택하지 않음</span>';});
+ const t=customTeamResult(customLeague,customMode),el=$('#customResult');
+ $('#customDetail').disabled=!t;
+ if(!t){el.innerHTML='<div class="empty">'+(items.every(Boolean)?'동일한 포켓몬 종 또는 동일 보유 개체는 중복할 수 없습니다.':'서로 다른 포켓몬 3마리를 선택하세요.')+'</div>';return;}
+ el.innerHTML='<div class="team-result"><div class="row spread"><b>커스텀 조합 평가</b><span class="team-score">'+t.score.toFixed(1)+'점</span></div><div class="team-roster" style="margin-top:14px">'+t.roles.map(({role,c,roleRank})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+escapeHTML(nameOf(c.p))+(c.virtual?' <span class="chip muted">가상</span>':'')+'</b>'+roleRankText(roleRank)+'<div class="soft">CP '+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('')+'</div><div class="team-score-details">성능 '+t.strength.toFixed(1)+' · 방어 '+t.defense.score.toFixed(1)+' · 공격 '+t.attack.score.toFixed(1)+' · IV '+t.iv.toFixed(1)+'</div><div class="team-explanation">'+teamExplain(t)+'</div>'+(items.some(c=>c.virtual)?'<p class="hint">가상 포켓몬 포함 · 실제 보유 전력 점수가 아닙니다.</p>':'')+'</div>';
+}
+function renderCustomTeam(){
+ if(!dataReady){$('#customResult').innerHTML='<div class="empty">데이터 로딩 중…</div>';$('#customDetail').disabled=true;return;}
+ $$('#customLeagueSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.league===customLeague));
+ $$('#customModeSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.mode===customMode));
+ $('#customSlots').innerHTML=[0,1,2].map(i=>'<div class="custom-slot"><div class="field"><label for="customSelect'+i+'">포켓몬 '+(i+1)+'</label><input class="search" data-custom-search="'+i+'" placeholder="이름 검색" aria-label="포켓몬 '+(i+1)+' 검색"><select id="customSelect'+i+'" data-custom-select="'+i+'">'+customOptions(i)+'</select></div><div class="custom-member"></div></div>').join('');
+ $$('#customSlots [data-custom-select]').forEach(el=>{el.value=customSlotsFor()[Number(el.dataset.customSelect)];});
+ renderCustomResult();
+}
+function initCustomTeam(){
+ $$('#customLeagueSwitch button').forEach(b=>b.onclick=()=>{customLeague=b.dataset.league;renderCustomTeam();});
+ $$('#customModeSwitch button').forEach(b=>b.onclick=()=>{customMode=b.dataset.mode;renderCustomTeam();});
+ $('#customSlots').addEventListener('input',e=>{const t=e.target;if(!t.matches('[data-custom-search]'))return;const i=Number(t.dataset.customSearch),el=$('#customSelect'+i);el.innerHTML=customOptions(i,t.value);el.value=customSlotsFor()[i];});
+ $('#customSlots').addEventListener('change',e=>{const t=e.target;if(!t.matches('[data-custom-select]'))return;customSlotsFor()[Number(t.dataset.customSelect)]=t.value;renderCustomResult();});
+ $('#customReset').onclick=()=>{customSelections[customKey()]=['','',''];renderCustomTeam();};
+ $('#customDetail').onclick=()=>{if(!customTeamResult(customLeague,customMode))return;detailSource='custom';detailLeague=customLeague;teamMode=customMode;detailCoverageMode=teamMode==='current'?'actual':'optimal';showTab('teamdetail');};
+}
+
 /* Detailed analysis of the explicitly selected team. No battle simulation. */
-let detailLeague='great',detailCoverageMode='optimal';
+let detailSource='auto',detailLeague='great',detailCoverageMode='optimal';
 function detailNames(types){return types.map(t=>TYPES[t]||t).join('·');}
 function detailMember(c){return escapeHTML(nameOf(c.p));}
 function detailMoveTypes(c){
@@ -1624,6 +1766,7 @@ function detailMoveTypes(c){
 }
 function detailBestHit(types,defTypes){return types.length?Math.max(...types.map(t=>teamEffectiveness(t,defTypes))):null;}
 function detailSelectedTeam(league){
+ if(detailSource==='custom')return customTeamResult(league,teamMode);
  const selected=teamSelected[teamModeKey(league)];
  if(!selected)return null;
  // Reconstruct from owned candidates even if the original selected combination
@@ -1735,14 +1878,14 @@ function renderOffensiveCoverage(roles,actual=false){
  '<p class="hint">'+(actual?'실제 등록 기술 기준입니다. 진화형의 기술은 미확정으로 표시합니다.':'PvPoke 최적 기술 기준입니다. 미해방 여부와 현재 보유 기술에 관계없이 평가합니다.')+' 단일 타입에 효과가 굉장한 기술과 반감되는 기술을 각각 표시합니다. 강한 반감은 본가에서 무효인 상성의 포켓몬 GO 피해 배율입니다. 공략 인원은 효과가 굉장한 기술을 가진 팀원만 계산합니다. 미공략은 약점 공격 기술이 확인되지 않았다는 의미이며, 실제 대전에서 이길 수 없다는 뜻은 아닙니다.'+(incomplete?' 일부 추천 기술 정보가 누락되어 공략 범위가 과소평가될 수 있습니다.':'')+'</p>';
 }
 function renderTeamDetail(){
- const el=$('#teamDetailContent');if(!el)return;
+ const el=$('#teamDetailContent');if(!el)return;$('#detailBack').textContent=detailSource==='custom'?'← 커스텀 조합':'← 최적 팀 TOP 5';
  document.querySelectorAll('#detailLeagueSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.league===detailLeague));
  $$('#detailModeSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.mode===teamMode));
  if(!dataReady){el.innerHTML='<div class="empty">포켓몬 데이터를 불러오는 중입니다.</div>';return;}
  const t=detailSelectedTeam(detailLeague);
  if(!t){
   el.innerHTML='<div class="empty"><b>'+(teamSelected[teamModeKey(detailLeague)]?'선택했던 조합을 현재 보관함에서 구성할 수 없습니다.':'이 리그에서 선택한 조합이 없습니다.')+'</b><p>최적 팀 TOP 5에서 사용할 조합을 선택하세요.</p><button class="btn primary" type="button" id="detailChoose">조합 선택하기</button></div>';
-  $('#detailChoose').onclick=()=>{teamLeague=detailLeague;showTab('teams');};return;
+  $('#detailChoose').onclick=()=>{if(detailSource==='custom'){customLeague=detailLeague;customMode=teamMode;showTab('customteam');}else{teamLeague=detailLeague;showTab('teams');}};return;
  }
  const roles=t.roles;
  const types=TEAM_ATTACK_TYPES;
@@ -1752,7 +1895,7 @@ function renderTeamDetail(){
   return coverage(b.c)-coverage(a.c)||b.c.power-a.c.power;
  })[0];
  const style=t.defense.score>=85&&t.attack.score>=85?'균형형':t.defense.score>=85?'방어 보완형':t.attack.score>=85?'공격 범위 중심형':'상성 주의형';
- const roster=roles.map(({role,c})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+detailMember(c)+'</b><div class="soft">'+detailNames(c.types)+' · '+(c.mode==='current'?'현재 CP ':'강화 CP ')+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('');
+ const roster=roles.map(({role,c,roleRank})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+detailMember(c)+(c.virtual?' <span class="chip muted">가상</span>':'')+'</b>'+roleRankText(roleRank)+'<div class="soft">'+detailNames(c.types)+' · '+(c.mode==='current'?'현재 CP ':'강화 CP ')+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('');
  const covers=roles.map(({role,c})=>{
   const weaknesses=types.filter(x=>teamEffectiveness(x,c.types)>1.05);
   const covered=t.items.filter(z=>z!==c).map(z=>({z,types:weaknesses.filter(x=>teamEffectiveness(x,z.types)<.96)})).filter(x=>x.types.length);
@@ -1768,7 +1911,7 @@ function renderTeamDetail(){
  }).join('');
  const recruits=detailRecruitment(t,detailLeague);
  const upgrades=recruits.map(x=>'<div class="detail-threat">'+portraitImg(x.p)+'<div><b>'+detailMember({p:x.p})+'</b> <span class="soft">리그 '+fmt(x.rank.rank)+'위</span><div>'+detailMember(x.replaced)+' 대신 고려 · <b class="team-good">+'+x.gain.toFixed(1)+'점</b></div><div class="soft">'+(x.fixed.length?'완화 가능한 공통 약점: '+escapeHTML(detailNames(x.fixed)):'종합 성능 또는 공격 범위 개선')+'</div></div></div>').join('');
- el.innerHTML='<div class="panel"><div class="row spread"><div><h3 style="margin:0">'+LEAGUES[detailLeague].label+' 선택 조합</h3><div class="sub">'+(teamMode==='current'?'현재 전력 기준':'최대 강화 기준')+' · 조합 유형: '+style+'</div></div><div class="team-score">'+t.score.toFixed(1)+'점</div></div><div class="team-roster" style="margin-top:15px">'+roster+'</div><div class="info" style="margin-top:12px"><b>상성 보완 핵심: '+detailMember(core.c)+'</b><div class="sub">다른 팀원의 약점을 저항으로 받아낼 수 있는 타입 수를 우선 평가했습니다.</div><div style="margin-top:8px">'+(gaps.length?'저항 없이 노출된 약점: '+escapeHTML(detailNames(gaps)):'모든 노출 약점에 저항하는 팀원이 있습니다.')+'</div></div></div>'+
+ el.innerHTML='<div class="panel"><div class="row spread"><div><h3 style="margin:0">'+LEAGUES[detailLeague].label+(detailSource==='custom'?' 커스텀 조합':' 선택 조합')+'</h3><div class="sub">'+(teamMode==='current'?'현재 전력 기준':'최대 강화 기준')+' · 조합 유형: '+style+'</div></div><div class="team-score">'+t.score.toFixed(1)+'점</div></div><div class="team-roster" style="margin-top:15px">'+roster+'</div><div class="info" style="margin-top:12px"><b>상성 보완 핵심: '+detailMember(core.c)+'</b><div class="sub">다른 팀원의 약점을 저항으로 받아낼 수 있는 타입 수를 우선 평가했습니다.</div><div style="margin-top:8px">'+(gaps.length?'저항 없이 노출된 약점: '+escapeHTML(detailNames(gaps)):'모든 노출 약점에 저항하는 팀원이 있습니다.')+'</div></div></div>'+
  '<div class="panel"><h3>상성 보완 관계</h3>'+covers+'</div><div class="panel"><h3>공격 상성 분석</h3><div class="sub" style="margin-bottom:12px">어떤 최적 기술과 실제 보유 기술의 공격 범위를 비교합니다.</div><div class="league-switch" style="margin-bottom:12px"><button type="button" data-coverage-mode="optimal" class="'+(detailCoverageMode==='optimal'?'active':'')+'">최적 기술 기준</button><button type="button" data-coverage-mode="actual" class="'+(detailCoverageMode==='actual'?'active':'')+'">보유 기술 기준</button></div>'+attackPanel+'</div>'+
  '<div class="panel"><h3>주의할 상대 포켓몬 TOP 5</h3><p class="sub">리그 종합 상위 50마리의 상대와 우리 팀의 평가 모드별 기술(현재 전력은 보유 기술, 최대 강화는 PvPoke 최적 기술)을 기준으로 양방향 타입 상성을 비교합니다. 실제 승패나 출현 빈도는 반영하지 않습니다.</p>'+(danger||'<div class="empty">현재 기준에서 뚜렷하게 불리한 상대가 확인되지 않았습니다. 기술 정보가 부족한 상대는 제외됩니다.</div>')+'</div>'+
  '<div class="panel"><h3>영입 추천 TOP 3</h3><p class="sub">리그 상위 50마리 중 보관함 및 진화 가능 종에 없는 후보를 한 자리씩 교체해 비교했습니다. IV 효율 96점 및 최대 강화된 영입 후보를 가정한 예상 점수이며 실제 육성 가능성과 사탕·별의모래 비용은 별도 확인하세요.</p>'+(upgrades||'<div class="empty">이 기준에서 더 높은 점수를 만드는 미보유 후보가 확인되지 않았습니다.</div>')+'</div>'+
@@ -1778,7 +1921,7 @@ function initTeamDetail(){
  $$('#detailModeSwitch button').forEach(b=>b.onclick=()=>{teamMode=b.dataset.mode==='current'?'current':'max';detailCoverageMode=teamMode==='current'?'actual':'optimal';renderTeamDetail();});
  $('#teamDetailContent').addEventListener('click',e=>{const b=e.target.closest('[data-coverage-mode]');if(!b)return;detailCoverageMode=b.dataset.coverageMode==='actual'?'actual':'optimal';renderTeamDetail();});
  document.querySelectorAll('#detailLeagueSwitch button').forEach(b=>b.onclick=()=>{detailLeague=b.dataset.league;renderTeamDetail();});
- $('#detailBack').onclick=()=>{teamLeague=detailLeague;showTab('teams');};
+ $('#detailBack').onclick=()=>{if(detailSource==='custom'){customLeague=detailLeague;customMode=teamMode;showTab('customteam');}else{teamLeague=detailLeague;showTab('teams');}};
 }
 
 /* -------- Opt-in, league-specific user team leaderboard -------- */
@@ -2051,7 +2194,7 @@ function cloudInit(){
 }
 
 window.__pvpCloudLoaded=()=>{if(!cloudClient)cloudInit();};
-function init(){const initialDataLoad=fetchData();$$('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.tab));initPhoto();loadOwned();initTeamBuilder();initTeamDetail();cloudInit();boardInit();
+function init(){const initialDataLoad=fetchData();$$('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.tab));initPhoto();loadOwned();initTeamBuilder();initCustomTeam();initTeamDetail();cloudInit();boardInit();
  $('#backRank').onclick=()=>showTab('rankings');
  $$('#ivdexLeagues button').forEach(b=>b.onclick=()=>{ivdexLeague=b.dataset.league;ivdexPage=0;$('#ivdexRank').value='';locateOwnedIVPage();refreshIVDex();});
  $('#ivdexSearch').onclick=()=>{ivdexPage=0;refreshIVDex();};
