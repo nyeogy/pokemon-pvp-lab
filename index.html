@@ -1461,7 +1461,6 @@ function teamFindRoles(items){
  });
  return [{role:'선봉',c:lead,roleRank:teamRoleRank(lead,'leads')},{role:'교체',c:others[0],roleRank:teamRoleRank(others[0],'switches')},{role:'마무리',c:others[1],roleRank:teamRoleRank(others[1],'closers')}];
 }
-function roleRankText(roleRank){return roleRank?'<div class="role-rank">역할 순위 '+fmt(roleRank.total)+'마리 중 '+fmt(roleRank.rank)+'위</div>':'<div class="soft">역할 순위 미확인 · 자체 배정</div>';}
 function teamIdentity(t){return t.items.map(c=>c.id).sort().join('::');}
 function teamCompute(league,anchorId='',mode='max'){
  const {candidates,anchorOptions,eligibleOwners,warnings,totalOptions}=collectTeamCandidates(league,anchorId,mode);
@@ -1567,7 +1566,7 @@ function showTeamCard(t,index){
  const details=t.roles.map(({role,c,roleRank})=>{
    // Rank IV precisely only for team members shown to the user.
    const iv=calcIVRank(c.p,c.owned.a,c.owned.d,c.owned.h,teamLeague,50);
-   return `<div class="team-pokemon"><div class="team-role">${role}</div>${portraitImg(c.p)}<div class="team-pokemon-text"><b>${escapeHTML(nameOf(c.p))}</b><div class="soft">${fmt(c.total)}마리 중 ${fmt(c.rank.rank)}위</div>${roleRankText(roleRank)}<div class="soft">IV ${c.owned.a}/${c.owned.d}/${c.owned.h} · ${iv?fmt(iv.total)+'개 중 '+fmt(iv.rank)+'위':'순위 없음'}</div><div class="soft">${c.mode==='current'?'현재':'강화'} CP ${fmt(c.cp)} · Lv.${c.level??'미확인'}</div>${c.mode==='current'?`<div class="soft">목표 CP ${fmt(c.targetCP)} · 도달률 ${(c.readiness*100).toFixed(1)}%</div>`:''}<div class="team-moves">${teamMoveDisplay(c)}</div></div></div>`;
+   return `<div class="team-pokemon"><div class="team-role">${role}</div>${portraitImg(c.p)}<div class="team-pokemon-text"><b>${escapeHTML(nameOf(c.p))}</b><div class="soft">${fmt(c.total)}마리 중 ${fmt(c.rank.rank)}위</div><div class="soft">IV ${c.owned.a}/${c.owned.d}/${c.owned.h} · ${iv?fmt(iv.total)+'개 중 '+fmt(iv.rank)+'위':'순위 없음'}</div><div class="soft">${c.mode==='current'?'현재':'강화'} CP ${fmt(c.cp)} · Lv.${c.level??'미확인'}</div>${c.mode==='current'?`<div class="soft">목표 CP ${fmt(c.targetCP)} · 도달률 ${(c.readiness*100).toFixed(1)}%</div>`:''}<div class="team-moves">${teamMoveDisplay(c)}</div></div></div>`;
  }).join('');
  const risk=t.defense.threats.length?`<span class="team-risk">공통 약점: ${t.defense.threats.slice(0,3).map(x=>TYPES[x.type]).join(' · ')}</span>`:'<span class="team-good">공통 약점 적음</span>';
  return `<article class="team-result ${chosen?'chosen':''}"><div class="row spread team-result-head"><div class="row"><span class="team-place">${index+1}위</span><span class="team-score">${t.score.toFixed(1)}점 <small>/ 100 · 비교용 자체 점수</small></span></div><button class="btn ${chosen?'primary':'ghost'}" type="button" data-team-select="${escapeHTML(id)}">${chosen?'상세 정보 다시 보기':'상세 정보 보기'}</button></div><div class="team-roster">${details}</div><div class="team-score-details">${teamMode==='current'?'CP·기술 보정 성능':'리그 순위'} ${t.strength.toFixed(1)} · 방어 보완 ${t.defense.score.toFixed(1)} · 공격 범위 ${t.attack.score.toFixed(1)} · 개체값 효율 ${t.iv.toFixed(1)}</div><div class="team-explanation">${teamExplain(t)}</div><div class="row" style="margin-top:10px">${risk}${t.attack.partial?'<span class="sub">일부 기술 타입 미확인</span>':''}</div></article>`;
@@ -1729,7 +1728,7 @@ function renderCustomResult(){
  const t=customTeamResult(customLeague,customMode),el=$('#customResult');
  $('#customDetail').disabled=!t;
  if(!t){el.innerHTML='<div class="empty">'+(items.every(Boolean)?'동일한 포켓몬 종 또는 동일 보유 개체는 중복할 수 없습니다.':'서로 다른 포켓몬 3마리를 선택하세요.')+'</div>';return;}
- el.innerHTML='<div class="team-result"><div class="row spread"><b>커스텀 조합 평가</b><span class="team-score">'+t.score.toFixed(1)+'점</span></div><div class="team-roster" style="margin-top:14px">'+t.roles.map(({role,c,roleRank})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+escapeHTML(nameOf(c.p))+(c.virtual?' <span class="chip muted">가상</span>':'')+'</b>'+roleRankText(roleRank)+'<div class="soft">CP '+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('')+'</div><div class="team-score-details">성능 '+t.strength.toFixed(1)+' · 방어 '+t.defense.score.toFixed(1)+' · 공격 '+t.attack.score.toFixed(1)+' · IV '+t.iv.toFixed(1)+'</div><div class="team-explanation">'+teamExplain(t)+'</div>'+(items.some(c=>c.virtual)?'<p class="hint">가상 포켓몬 포함 · 실제 보유 전력 점수가 아닙니다.</p>':'')+'</div>';
+ el.innerHTML='<div class="team-result"><div class="row spread"><b>커스텀 조합 평가</b><span class="team-score">'+t.score.toFixed(1)+'점</span></div><div class="team-roster" style="margin-top:14px">'+t.roles.map(({role,c,roleRank})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+escapeHTML(nameOf(c.p))+(c.virtual?' <span class="chip muted">가상</span>':'')+'</b>'+'<div class="soft">CP '+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('')+'</div><div class="team-score-details">성능 '+t.strength.toFixed(1)+' · 방어 '+t.defense.score.toFixed(1)+' · 공격 '+t.attack.score.toFixed(1)+' · IV '+t.iv.toFixed(1)+'</div><div class="team-explanation">'+teamExplain(t)+'</div>'+(items.some(c=>c.virtual)?'<p class="hint">가상 포켓몬 포함 · 실제 보유 전력 점수가 아닙니다.</p>':'')+'</div>';
 }
 function renderCustomTeam(){
  if(!dataReady){$('#customResult').innerHTML='<div class="empty">데이터 로딩 중…</div>';$('#customDetail').disabled=true;return;}
@@ -1886,7 +1885,7 @@ function renderTeamDetail(){
   return coverage(b.c)-coverage(a.c)||b.c.power-a.c.power;
  })[0];
  const style=t.defense.score>=85&&t.attack.score>=85?'균형형':t.defense.score>=85?'방어 보완형':t.attack.score>=85?'공격 범위 중심형':'상성 주의형';
- const roster=roles.map(({role,c,roleRank})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+detailMember(c)+(c.virtual?' <span class="chip muted">가상</span>':'')+'</b>'+roleRankText(roleRank)+'<div class="soft">'+detailNames(c.types)+' · '+(c.mode==='current'?'현재 CP ':'강화 CP ')+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('');
+ const roster=roles.map(({role,c,roleRank})=>'<div class="team-pokemon"><div class="team-role">'+role+'</div>'+portraitImg(c.p)+'<div class="team-pokemon-text"><b>'+detailMember(c)+(c.virtual?' <span class="chip muted">가상</span>':'')+'</b>'+'<div class="soft">'+detailNames(c.types)+' · '+(c.mode==='current'?'현재 CP ':'강화 CP ')+fmt(c.cp)+'</div><div class="team-moves">'+teamMoveDisplay(c)+'</div></div></div>').join('');
  const covers=roles.map(({role,c})=>{
   const weaknesses=types.filter(x=>teamEffectiveness(x,c.types)>1.05);
   const covered=t.items.filter(z=>z!==c).map(z=>({z,types:weaknesses.filter(x=>teamEffectiveness(x,z.types)<.96)})).filter(x=>x.types.length);
