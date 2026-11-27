@@ -647,7 +647,7 @@ function trainingDecision(entry,original,a,d,h,currentCp,desiredLeague){
    ' (강화 약 '+(levels*2).toFixed(0)+'회) · 현재 레벨 진화 시 CP '+fmt(nowEvolvedCp)+
    ' / 목표 CP '+fmt(entry.iv.cp)+(possible.length>1?' · 레벨 추정에 복수 후보 있음':'');
  if(levels>15||fraction<0.60)
-  return {kind:'reject',label:'육성·보관 비추천',reason:'목표 CP까지 강화 부담이 지나치게 큽니다. '+note};
+  return {kind:'keep',label:'보관 추천 (육성 부담 높음)',reason:'성능·IV 기준을 통과했습니다. 강화 부담이 크므로 당장 투자하기보다 장기 육성 후보로 보관하세요. '+note};
  if(levels>8||fraction<0.78)
   return {kind:'keep',label:'보관 추천',reason:'성능·IV 기준을 통과했지만 즉시 강화에는 자원 부담이 있습니다. '+note};
  return {kind:'train',label:'강화 추천',reason:'성능·IV 순위 상위 50%이며 목표 CP까지 강화 부담도 비교적 낮습니다. '+note};
@@ -709,7 +709,8 @@ function renderAnalysis(){
  '<div class="analysis-list">'+rows+'</div>'+topMoves+
  '<p class="hint">판정 조건: (1) 해당 리그 PvPoke 종합 성능 상위 50% (2) 동일 포켓몬·폼 IV 조합 상위 50%를 모두 충족해야 합니다.'+
  ' CP와 IV로 현재 레벨을 추정하여 목표까지 추가 강화 8레벨 이하·예상 진화 CP 78% 이상이면 강화 추천,'+
- ' 15레벨 이하·60% 이상이면 보관 추천, 그 미만이면 비추천합니다.'+
+ ' 위 강화 추천 조건에 미달하면 보관 추천으로 판정합니다. 추가 강화가 15레벨을 초과하거나 CP 도달률이 60% 미만이면 보관 추천 (육성 부담 높음)으로 표시합니다.'+
+ ' 강화 부담만으로는 보관 비추천으로 판정하지 않습니다. 성능·IV 기준 미달 또는 해당 리그에서 출전할 수 없는 경우에는 기존 비추천 판정을 유지합니다.'+
  ' CP가 낮아도 진화 자체가 불가능한 것은 아닙니다. 이 기준은 육성 부담을 간접 추정한 것으로 사탕·별의모래 실비, 실제 승률을 계산하지 않습니다.'+
  ' 마스터리그도 레벨 50(베스트파트너 선택 시 51)을 가정합니다.</p></div>';
 }
